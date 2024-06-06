@@ -1,5 +1,5 @@
   DATA:
-    
+    cl_pi_documents TYPE REF TO /scwm/cl_mon_pi,
     rl_post_date TYPE /lime/pi_r_post_date.
 
 
