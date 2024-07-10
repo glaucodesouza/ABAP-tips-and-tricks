@@ -1,4 +1,6 @@
 *Convert FLTP to decimal
+*l1 is 1.2700000000000000E+03 (in the beginning)
+*l3 is 1270.000 (in the end)
 DATA:
   l1 TYPE atflv VALUE '1.2700000000000000E+03',
   l2 TYPE p DECIMALS 3,
