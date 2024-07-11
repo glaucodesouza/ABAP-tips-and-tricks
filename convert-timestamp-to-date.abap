@@ -20,3 +20,10 @@ DATA:
     " Example 3
     CONVERT TIME STAMP lv_confirmed_at TIME ZONE sy-zonlo(3) "e.g. when sy-zonlo=UTC-3
             INTO DATE DATA(lv_erdat) TIME DATA(lv_erzet). " lv_erdat ends with e.g.30.05.2024
+
+    " Example 4
+    cl_abap_tstmp=>systemtstmp_utc2syst(
+           EXPORTING  utc_tstmp = lv_utc_timestamp  
+           IMPORTING  syst_date = lv_system_date    " System Date
+                      syst_time = lv_system_time    " System Time
+           ).
