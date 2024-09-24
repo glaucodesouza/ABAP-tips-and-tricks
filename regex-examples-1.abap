@@ -32,3 +32,18 @@
   WRITE: / 'depois:', num.
 
   shift num left deleting leading '0'.
+
+
+  " Test 5
+  " deleting special characteres
+  WRITE: /, /, 'Test 5'.
+
+  DATA: s1 TYPE string VALUE ' #$ quei&*!jo 033 %$'.
+  WRITE: / 'antes: ', s1.
+  REPLACE ALL OCCURRENCES OF PCRE `[^\w ]` IN s1 WITH ``.
+  SKIP 1.
+  WRITE: / 'depois: ', s1.
+
+" result
+" antes:   #$ quei&*!jo 033 %$
+" depois:    queijo 033
