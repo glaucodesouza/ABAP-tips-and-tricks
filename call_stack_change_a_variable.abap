@@ -1,3 +1,7 @@
+*&---------------------------------------------------------------------*
+*PM BADI for changing RESB of Order price value                        *
+*&---------------------------------------------------------------------*
+*BADI: WORKORDER_UPDATE, method: BEFORE_UPDATE                         *
 *Reason: Update Reqmt Date (BDTER) in order to consider the current    *
 *        date.                                                         *
 *&---------------------------------------------------------------------*
