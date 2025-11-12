@@ -1,0 +1,266 @@
+FORM zf_enviar_excel_por_email .
+
+"-------------------------------------
+" This FORM 
+" Saves ITAB to excel
+" and send by mail
+" OBS.:
+" the excel in reality is an CSV, but also opens as excel, when confirmming YES to open file.
+"-------------------------------------
+
+
+  DATA:
+      lv_filename TYPE string.
+
+  " Montar xls file
+  " Column names
+  CONCATENATE 'Material'(065)
+              'Nfe de Formação de Lote'(066)
+              'Série – Nfe Form Lote'(067)
+              'Chave Nfe Formação Lote'(068)
+              'Data Em - Cent. Recebi'(069)
+              'Qtd. Documento Débito'(070)
+              'N° Nfe Retorno'(071)
+              'Valor Unitário Nfe Retorno'(072)
+              'Chave de acesso Nfe Retorno'(073)
+  INTO it_attach SEPARATED BY cl_abap_char_utilities=>horizontal_tab.
+  APPEND  it_attach.
+
+  " Data lines
+  LOOP AT t_excel_envio_fin INTO DATA(ls_excel).
+
+    DATA(lv_matnr)           = CONV string( ls_excel-matnr ).
+    DATA(lv_data_form_lote)  = CONV string( ls_excel-data_form_lote ).
+    DATA(lv_series_s)        = CONV string( ls_excel-series_s ).
+    DATA(lv_acckey_s)        = |`{ CONV string( ls_excel-acckey_s ) }|.
+    DATA(lv_data_e)          = CONV string( ls_excel-data_e ).
+    DATA(lv_menge_deb)       = CONV string( ls_excel-menge_deb ).
+    DATA(lv_nfenum_retsimb)  = CONV string( ls_excel-nfenum_retsimb ).
+    DATA(lv_netwr)           = CONV string( ls_excel-netwr ).
+    DATA(lv_acckey_retsimb)  = CONV string( ls_excel-acckey_retsimb ).
+
+    CONCATENATE
+      lv_matnr
+      lv_data_form_lote
+      lv_series_s
+      lv_acckey_s
+      lv_data_e
+      lv_menge_deb
+      lv_nfenum_retsimb
+      lv_netwr
+      lv_acckey_retsimb
+      INTO it_attach SEPARATED BY cl_abap_char_utilities=>horizontal_tab.
+    APPEND it_attach.
+  ENDLOOP.
+
+  "Montar mensagem
+  REFRESH it_message.
+  it_message = 'Planilha em anexo'.
+  APPEND it_message.
+
+  " Get receiver mail from popup to user
+  DATA: lv_mail    TYPE string VALUE 'evelingomes@suzano.com.br',
+        lv_subject TYPE string VALUE 'programa pra valer'.
+  PERFORM popup_get_values CHANGING lv_mail lv_subject.
+
+* Send file by email as .xls speadsheet
+  lv_filename = 'nacionalizacao_' && sy-datum && '_' && sy-uzeit.
+  PERFORM send_file_as_email_attachment
+                        TABLES it_message
+                               it_attach
+                        USING lv_mail "'email'
+                              lv_subject "'Planilha em anexo'
+                              'XLS'
+                              lv_filename "'nacionalizacao'
+                              ' '
+                              ' '
+                              ' '
+                        CHANGING gd_error
+                                 gd_reciever.
+
+*   Instructs mail send program for SAPCONNECT to send email(rsconn01)
+  PERFORM initiate_mail_execute_program.
+
+ENDFORM.
+
+FORM popup_get_values CHANGING p_email p_assunto.
+"-------------------------------------
+" Get receiver mail from popup to user
+"-------------------------------------
+  DATA: lt_fields TYPE TABLE OF sval,
+        ls_fields TYPE sval.
+
+  ls_fields-tabname   = 'ADR6'.
+  ls_fields-fieldname = 'SMTP_ADDR'.
+  ls_fields-value     = p_email.     " Default value
+  APPEND ls_fields TO lt_fields.
+
+  ls_fields-tabname   = 'MAKT'.
+  ls_fields-fieldname = 'MAKTX'.
+  ls_fields-value     = p_assunto.     " Default value
+  ls_fields-fieldtext = 'Assunto'.
+  APPEND ls_fields TO lt_fields.
+
+  CALL FUNCTION 'POPUP_GET_VALUES'
+    EXPORTING
+      popup_title     = 'Entrar informações do e-mail'
+    TABLES
+      fields          = lt_fields
+    EXCEPTIONS
+      error_in_fields = 1
+      OTHERS          = 2.
+
+  IF sy-subrc = 0.
+    READ TABLE lt_fields WITH KEY fieldname = 'SMTP_ADDR' INTO ls_fields.
+    p_email = ls_fields-value.
+    READ TABLE lt_fields WITH KEY fieldname = 'MAKTX' INTO ls_fields.
+    p_assunto = ls_fields-value.
+    IF NOT p_email CS '@' OR
+      NOT p_email CS '.' OR
+      NOT p_email CS 'com' OR
+      NOT p_email CS 'COM'.
+      MESSAGE s398(00) WITH TEXT-063 DISPLAY LIKE c_e.
+      v_erro = c_x.
+      RETURN.
+    ELSE.
+
+    ENDIF.
+  ENDIF.
+
+ENDFORM.
+
+FORM send_file_as_email_attachment TABLES pit_message
+                                          pit_attach
+                                    USING p_email
+                                          p_mtitle
+                                          p_format
+                                          p_filename
+                                          p_attdescription
+                                          p_sender_address
+                                          p_sender_addres_type
+                                 CHANGING p_error
+                                          p_reciever.
+
+  DATA: lv_error               TYPE sy-subrc,
+        lv_reciever            TYPE sy-subrc,
+        lv_mtitle              LIKE sodocchgi1-obj_descr,
+        lv_email               LIKE  somlreci1-receiver,
+        lv_format              TYPE  so_obj_tp,
+        lv_attdescription      TYPE  so_obj_nam,
+        lv_attfilename         TYPE  so_obj_des,
+        lv_sender_address      LIKE  soextreci1-receiver,
+        lv_sender_address_type LIKE  soextreci1-adr_typ,
+        lv_receiver            LIKE  sy-subrc.
+
+  lv_email               = p_email.
+  lv_mtitle              = p_mtitle.
+  lv_format              = p_format.
+  lv_attdescription      = p_attdescription.
+  lv_attfilename         = p_filename.
+  lv_sender_address      = p_sender_address.
+  lv_sender_address_type = p_sender_addres_type.
+
+* Fill the document data.
+  w_doc_data-doc_size = 1.
+
+* Populate the subject/generic message attributes
+  w_doc_data-obj_langu = sy-langu.
+  w_doc_data-obj_name  = 'SAPRPT'.
+  w_doc_data-obj_descr = lv_mtitle .
+  w_doc_data-sensitivty = 'F'.
+
+* Fill the document data and get size of attachment
+  CLEAR w_doc_data.
+  READ TABLE it_attach INDEX w_cnt.
+  w_doc_data-doc_size = ( w_cnt - 1 ) * 255 + strlen( it_attach ).
+  w_doc_data-obj_langu  = sy-langu.
+  w_doc_data-obj_name   = 'SAPRPT'.
+  w_doc_data-obj_descr  = lv_mtitle.
+  w_doc_data-sensitivty = 'F'.
+  CLEAR t_attachment.
+  REFRESH t_attachment.
+  t_attachment[] = pit_attach[].
+
+* Describe the body of the message
+  CLEAR t_packing_list.
+  REFRESH t_packing_list.
+  t_packing_list-transf_bin = space.
+  t_packing_list-head_start = 1.
+  t_packing_list-head_num = 0.
+  t_packing_list-body_start = 1.
+  DESCRIBE TABLE it_message LINES t_packing_list-body_num.
+  t_packing_list-doc_type = 'RAW'.
+  APPEND t_packing_list.
+
+* Create attachment notification
+  t_packing_list-transf_bin = 'X'.
+  t_packing_list-head_start = 1.
+  t_packing_list-head_num   = 1.
+  t_packing_list-body_start = 1.
+
+  DESCRIBE TABLE t_attachment LINES t_packing_list-body_num.
+  t_packing_list-doc_type   =  lv_format.
+  t_packing_list-obj_descr  =  lv_attdescription.
+  t_packing_list-obj_name   =  lv_attfilename.
+  t_packing_list-doc_size   =  t_packing_list-body_num * 255.
+  APPEND t_packing_list.
+
+* Add the recipients email address
+  CLEAR t_receivers.
+  REFRESH t_receivers.
+  t_receivers-receiver = lv_email.
+  t_receivers-rec_type = 'U'.
+  t_receivers-com_type = 'INT'.
+  t_receivers-notif_del = 'X'.
+  t_receivers-notif_ndel = 'X'.
+  APPEND t_receivers.
+
+  CALL FUNCTION 'SO_DOCUMENT_SEND_API1'
+    EXPORTING
+      document_data              = w_doc_data
+      put_in_outbox              = 'X'
+      sender_address             = lv_sender_address
+      sender_address_type        = lv_sender_address_type
+      commit_work                = 'X'
+    IMPORTING
+      sent_to_all                = w_sent_all
+    TABLES
+      packing_list               = t_packing_list
+      contents_bin               = t_attachment
+      contents_txt               = it_message
+      receivers                  = t_receivers
+    EXCEPTIONS
+      too_many_receivers         = 1
+      document_not_sent          = 2
+      document_type_not_exist    = 3
+      operation_no_authorization = 4
+      parameter_error            = 5
+      x_error                    = 6
+      enqueue_error              = 7
+      OTHERS                     = 8.
+
+  IF sy-subrc = 0.
+    COMMIT WORK.
+  ENDIF.
+
+* Populate zerror return code
+  lv_error = sy-subrc.
+
+* Populate zreceiver return code
+  LOOP AT t_receivers.
+    lv_receiver = t_receivers-retrn_code.
+  ENDLOOP.
+
+ENDFORM.
+
+FORM initiate_mail_execute_program.
+  WAIT UP TO 2 SECONDS.
+  SUBMIT rsconn01 WITH mode = 'INT'
+  WITH output = 'X'
+  AND RETURN.
+
+  IF sy-subrc = 0.
+    MESSAGE s398(00) WITH TEXT-064.
+  ENDIF.
+
+ENDFORM.                    " INITIATE_MAIL_EXECUTE_PROGRAM
