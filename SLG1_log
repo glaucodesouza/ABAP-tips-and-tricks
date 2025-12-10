@@ -1,0 +1,64 @@
+*------------------------------------------------------
+* iv_kostl
+* iv_message
+*
+* ATENTION: Create Object e.g. ZPORTAL before in SLG0.
+*------------------------------------------------------
+METHOD gravar_log.
+
+    DATA: ls_log     TYPE bal_s_log,
+          lv_handle  TYPE balloghndl,
+          ls_log_msg TYPE bal_s_msg.
+
+    " 1) Cabeçalho do log (definido em SLG0)
+    ls_log-object    = 'ZPORTAL'. " Objeto
+    ls_log-subobject = 'ZLOG'.    " Subobjeto
+    ls_log-extnumber = iv_kostl.  " Número externo (opcional)
+    ls_log-aldate    = sy-datum.
+    ls_log-altime    = sy-uzeit.
+    ls_log-aluser    = sy-uname.
+    ls_log-alprog    = sy-repid.
+
+    CALL FUNCTION 'BAL_LOG_CREATE'
+      EXPORTING
+        i_s_log                 = ls_log
+      IMPORTING
+        e_log_handle            = lv_handle
+      EXCEPTIONS
+        log_header_inconsistent = 1
+        OTHERS                  = 2.
+
+    IF sy-subrc <> 0.
+      RETURN.
+    ENDIF.
+
+    " 2) Mensagem de TEXTO LIVRE (sem msgid/msgno)
+    CALL FUNCTION 'BAL_LOG_MSG_ADD_FREE_TEXT'
+      EXPORTING
+        i_log_handle     = lv_handle
+        i_msgty          = 'E'
+        i_text           = iv_message
+      EXCEPTIONS
+        log_not_found    = 1
+        msg_inconsistent = 2
+        log_is_full      = 3
+        OTHERS           = 4.
+    IF sy-subrc <> 0.
+      RETURN.
+    ENDIF.
+
+    " 3) Persistir
+    CALL FUNCTION 'BAL_DB_SAVE'
+      EXPORTING
+        i_client   = sy-mandt
+        i_save_all = abap_true
+      EXCEPTIONS
+        OTHERS     = 1.
+
+    IF sy-subrc = 0.
+      COMMIT WORK.
+    ELSE.
+      ROLLBACK WORK.
+    ENDIF.
+
+  ENDMETHOD.
