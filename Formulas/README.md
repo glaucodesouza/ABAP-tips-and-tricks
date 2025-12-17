@@ -6,59 +6,58 @@
 - Example
 
 
+            DATA(lo_preco_comp) = NEW zcl_exit_cond_preco_composto( ).
+        
+        IF lo_preco_comp IS BOUND AND lo_preco_comp->is_active( ).
+        
+          DATA:
+            lv_kvgr2_pix_europa TYPE knvv-kvgr2,
+            lv_kvgr3_pix_china  TYPE knvv-kvgr3,
+            lv_konda_pix_europa TYPE knvv-konda,
+            lv_konda_pix_china  TYPE knvv-konda.
+        
+          CONSTANTS:
+            lc_kunnr TYPE char30 VALUE '(SAPMV45A)XVBAK-KUNNR',
+            lc_spart TYPE char30 VALUE '(SAPMV45A)XVBAK-SPART',
+            lc_vkorg TYPE char30 VALUE '(SAPMV45A)XVBAK-VKORG',
+            lc_vtweg TYPE char30 VALUE '(SAPMV45A)XVBAK-VTWEG',
+            lc_kschl TYPE char30 VALUE 'XKOMV-KSCHL'.
+        
+          FIELD-SYMBOLS:
+            <fs_kunnr> TYPE vbak-kunnr,
+            <fs_spart> TYPE vbak-spart,
+            <fs_vkorg> TYPE vbak-vkorg,
+            <fs_vtweg> TYPE vbak-vtweg,
+            <fs_kschl> TYPE komv-kschl.
+        
+          ASSIGN (lc_kunnr) TO <fs_kunnr>.
+          ASSIGN (lc_spart) TO <fs_spart>.
+          ASSIGN (lc_vkorg) TO <fs_vkorg>.
+          ASSIGN (lc_vtweg) TO <fs_vtweg>.
+          ASSIGN (lc_kschl) TO <fs_kschl>.
+        
+          "EF 1.1
+          IF <fs_kunnr> IS ASSIGNED AND
+             <fs_spart> IS ASSIGNED AND
+             <fs_kschl> IS ASSIGNED AND
+             lo_preco_comp->check_cond_pix_europe( <fs_kschl> ).
+
+        lo_preco_comp->sel_knvv_pix_europa(
+          EXPORTING
+            iv_kunnr = <fs_kunnr>
+            iv_vkorg = <fs_vkorg>
+            iv_vtweg = <fs_vtweg>
+            iv_spart = <fs_spart>
+          IMPORTING
+            ev_kvgr2 = lv_kvgr2_pix_europa
+            ev_konda = lv_konda_pix_europa
+        ).
     
-      DATA(lo_preco_comp) = NEW zcl_exit_cond_preco_composto( ).
-      
-      IF lo_preco_comp IS BOUND AND lo_preco_comp->is_active( ).
     
-      DATA:
-        lv_kvgr2_pix_europa TYPE knvv-kvgr2,
-        lv_kvgr3_pix_china  TYPE knvv-kvgr3,
-        lv_konda_pix_europa TYPE knvv-konda,
-        lv_konda_pix_china  TYPE knvv-konda.
-    
-      CONSTANTS:
-        lc_kunnr TYPE char30 VALUE '(SAPMV45A)XVBAK-KUNNR',
-        lc_spart TYPE char30 VALUE '(SAPMV45A)XVBAK-SPART',
-        lc_vkorg TYPE char30 VALUE '(SAPMV45A)XVBAK-VKORG',
-        lc_vtweg TYPE char30 VALUE '(SAPMV45A)XVBAK-VTWEG',
-        lc_kschl TYPE char30 VALUE 'XKOMV-KSCHL'.
-    
-      FIELD-SYMBOLS:
-        <fs_kunnr> TYPE vbak-kunnr,
-        <fs_spart> TYPE vbak-spart,
-        <fs_vkorg> TYPE vbak-vkorg,
-        <fs_vtweg> TYPE vbak-vtweg,
-        <fs_kschl> TYPE komv-kschl.
-    
-      ASSIGN (lc_kunnr) TO <fs_kunnr>.
-      ASSIGN (lc_spart) TO <fs_spart>.
-      ASSIGN (lc_vkorg) TO <fs_vkorg>.
-      ASSIGN (lc_vtweg) TO <fs_vtweg>.
-      ASSIGN (lc_kschl) TO <fs_kschl>.
-    
-      "EF 1.1
-      IF <fs_kunnr> IS ASSIGNED AND
-         <fs_spart> IS ASSIGNED AND
-         <fs_kschl> IS ASSIGNED AND
-         lo_preco_comp->check_cond_pix_europe( <fs_kschl> ).
-  
-      lo_preco_comp->sel_knvv_pix_europa(
-        EXPORTING
-          iv_kunnr = <fs_kunnr>
-          iv_vkorg = <fs_vkorg>
-          iv_vtweg = <fs_vtweg>
-          iv_spart = <fs_spart>
-        IMPORTING
-          ev_kvgr2 = lv_kvgr2_pix_europa
-          ev_konda = lv_konda_pix_europa
-      ).
-  
-  
-      "--------------------------------
-      " EUROPA
-      "--------------------------------
-      CASE lv_kvgr2_pix_europa.
+        "--------------------------------
+        " EUROPA
+        "--------------------------------
+        CASE lv_kvgr2_pix_europa.
 
       WHEN '300'.
 
@@ -184,33 +183,33 @@
           xkomv-kkurs = '1.00000'.
         ENDIF.
 
-    ENDCASE.
-  ENDIF."EF 1.1
-
-  "--------------------------------
-  " CHINA
-  "--------------------------------
-  "EF 1.2
-  IF <fs_kunnr> IS ASSIGNED AND
-     <fs_spart> IS ASSIGNED AND
-     <fs_kschl> IS ASSIGNED AND
-     lo_preco_comp->check_cond_pix_china( <fs_kschl> ).
-
-    lo_preco_comp->sel_knvv_pix_china(
-      EXPORTING
-        iv_kunnr = <fs_kunnr>
-        iv_vkorg = <fs_vkorg>
-        iv_vtweg = <fs_vtweg>
-        iv_spart = <fs_spart>
-      IMPORTING
-        ev_kvgr3 = lv_kvgr3_pix_china
-        ev_konda = lv_konda_pix_china
-    ).
-
-    "--------------------------------
-    " CHINA
-    "--------------------------------
-    CASE lv_kvgr3_pix_china.
+        ENDCASE.
+          ENDIF."EF 1.1
+        
+          "--------------------------------
+          " CHINA
+          "--------------------------------
+          "EF 1.2
+          IF <fs_kunnr> IS ASSIGNED AND
+             <fs_spart> IS ASSIGNED AND
+             <fs_kschl> IS ASSIGNED AND
+             lo_preco_comp->check_cond_pix_china( <fs_kschl> ).
+    
+        lo_preco_comp->sel_knvv_pix_china(
+          EXPORTING
+            iv_kunnr = <fs_kunnr>
+            iv_vkorg = <fs_vkorg>
+            iv_vtweg = <fs_vtweg>
+            iv_spart = <fs_spart>
+          IMPORTING
+            ev_kvgr3 = lv_kvgr3_pix_china
+            ev_konda = lv_konda_pix_china
+        ).
+    
+        "--------------------------------
+        " CHINA
+        "--------------------------------
+        CASE lv_kvgr3_pix_china.
 
       WHEN '304'.
         "Igual a 304 – Selecionar o último PIX do mês anterior, cadastrado na tabela A508, condição Z3P8
