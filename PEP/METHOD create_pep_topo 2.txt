@@ -1,0 +1,166 @@
+  METHOD create_pep_topo.
+
+    CLEAR:
+      p_ret_status,
+      p_ret_message,
+      p_elemento_pep,
+      p_chave_sap.
+
+    DATA: lt_wbs_new       TYPE TABLE OF bapi_bus2054_new,
+          ls_wbs_new       TYPE bapi_bus2054_new,
+          lt_extin         TYPE TABLE OF bapiparex,
+          ls_ext           TYPE bapiparex,
+          lt_return        TYPE TABLE OF bapiret2,
+          lt_precommit_ret TYPE TABLE OF bapiret2.
+
+    ls_wbs_new-wbs_element               = ps_project-projectidsap.
+    ls_wbs_new-description               = ps_project-descricao.
+    ls_wbs_new-proj_type                 = ps_project-idtipoprojeto.
+    ls_wbs_new-priority                  = ps_project-idprioridade.
+    ls_wbs_new-respsbl_cctr              = ps_project-ccresponsavel.
+    ls_wbs_new-request_cctr              = ps_project-ccsolicitante.
+    "ls_wbs_new-location                  = ps_project-idlocalizacao.
+    ls_wbs_new-wbs_basic_start_date      = ps_project-dtinicio.
+    ls_wbs_new-wbs_basic_finish_date     = ps_project-dtfim.
+    APPEND ls_wbs_new TO lt_wbs_new.
+
+    "INI teste 2
+*    TYPES: BEGIN OF ty_bapi_te_wbs_element.
+*      include type bapi_te_wbs_element.
+*    types: END OF ty_bapi_te_wbs_element.
+    TYPES: BEGIN OF ty_bapi_te_wbs_element,
+             wbs_element    TYPE ps_posid,
+             zzpriorprj     TYPE zzpriorprj,
+*             zz_estrategia  TYPE zz_estrategia,
+*             zz_bus_line    TYPE zzbus_line,
+*             zz_geo         TYPE prps-zz_geo,
+             zz_program_l1  TYPE zz_program,
+             zz_strategy    TYPE zz_strategy,
+             zz_sub_strat   TYPE zz_sub_strat,
+             zz_macro_prj   TYPE zz_pais_prps,
+             zz_process_l1  TYPE zz_proc,
+             zz_prod_serv   TYPE zz_prod_serv,
+             zzcadeia_valor TYPE zzcadeia_valor,
+             zz_pais        TYPE zz_pais_prps,
+             zz_stat_1      TYPE zz_stat1_prps,
+             zz_perc_stat_1 TYPE zz_perc_stat_1,
+             zz_solic_cod   TYPE zzsoliccod,
+             zz_resp_cod    TYPE zzrespcod,
+             zzfundid       TYPE zz_fundid,
+           END OF ty_bapi_te_wbs_element.
+
+    DATA: ls_custom_data TYPE ty_bapi_te_wbs_element,
+          lt_custom_data TYPE STANDARD TABLE OF ty_bapi_te_wbs_element,
+          ls_extensionin TYPE bapiparex,
+          lt_extensionin TYPE STANDARD TABLE OF bapiparex.
+
+    ls_custom_data-wbs_element    = ps_project-projectidsap.
+    ls_custom_data-zzpriorprj     = ps_project-idprioridade.
+    ls_custom_data-zz_program_l1  = ps_project-programa.
+    ls_custom_data-zz_strategy    = ps_project-estrateg.
+    ls_custom_data-zz_sub_strat   = ps_project-subestrateg.
+    ls_custom_data-zz_macro_prj   = ps_project-macroproj.
+    ls_custom_data-zz_process_l1  = ps_project-process.
+    ls_custom_data-zz_prod_serv   = ps_project-dscproduto.
+    ls_custom_data-zzcadeia_valor = ps_project-fase.
+    ls_custom_data-zz_pais        = ps_project-pais.
+    ls_custom_data-zz_stat_1      = ps_project-estado.
+    ls_custom_data-zz_perc_stat_1 = '100'.
+    ls_custom_data-zz_solic_cod   = ps_project-idgerenciasolicitante.
+    ls_custom_data-zz_resp_cod    = ps_project-idgerenciaexecutante.
+    ls_custom_data-zzfundid       = ps_project-codigofundo.
+    "ls_custom_data-ZZ_BUS_LINE    = 'test busline'.
+    "ls_custom_data-ZZ_GEO         = 'test ZZ_GEO'.
+    APPEND ls_custom_data TO lt_custom_data.
+    CLEAR ls_custom_data.
+
+    LOOP AT lt_custom_data INTO ls_custom_data.
+
+      DATA: lv_buffer TYPE string.
+
+      CALL METHOD cl_abap_container_utilities=>fill_container_c
+        EXPORTING
+          im_value     = ls_custom_data
+        IMPORTING
+          ex_container = lv_buffer.
+
+      ls_extensionin-structure   = 'BAPI_TE_WBS_ELEMENT'.
+      ls_extensionin-valuepart1  = lv_buffer.
+      APPEND ls_extensionin TO lt_extensionin.
+      CLEAR ls_extensionin.
+
+**      ls_extensionin-structure = 'PRPS'. " Name of your custom structure
+**      ls_extensionin-structure = 'CI_PRPS'. " Name of your custom structure
+*      ls_extensionin-structure = 'BAPI_TE_WBS_ELEMENT'. " Name of your custom structure
+*      ls_extensionin-valuepart1 = ls_custom_data. " This implicitly handles the field mapping
+*      APPEND ls_extensionin TO lt_extensionin.
+*      CLEAR ls_extensionin.
+    ENDLOOP.
+    "FIM teste 2
+
+    " clear buffer data
+    CALL FUNCTION 'BAPI_PS_INITIALIZATION'.
+
+    "--- Call the CREATE_MULTI BAPI -------------------------------------------
+    CALL FUNCTION 'BAPI_BUS2054_CREATE_MULTI'
+      EXPORTING
+        i_project_definition = CONV ps_pspid( ps_project-projectidsap )
+      TABLES
+        it_wbs_element       = lt_wbs_new
+        "extensionin          = lt_extin "TESTE 1
+        extensionin          = lt_extensionin "TESTE 2
+        et_return            = lt_return.
+
+    " Error?
+    LOOP AT lt_return INTO DATA(ls_response) WHERE type CO 'EAX' AND id <> 'CNIF_PI'  AND number <> '007'.
+      MESSAGE ID ls_response-id
+              TYPE ls_response-type
+              NUMBER ls_response-number
+              WITH ls_response-message_v1
+                   ls_response-message_v2
+                   ls_response-message_v3
+                   ls_response-message_v4
+              INTO p_ret_message.
+      p_ret_message = |{ p_ret_message };{ ls_response-id };{ ls_response-number }|.
+      p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDLOOP.
+
+    " Pre commit
+    CALL FUNCTION 'BAPI_PS_PRECOMMIT'
+      TABLES
+        et_return = lt_precommit_ret. "#EC CI_SEL_NESTED or "#EC CI_SROFC_NESTED
+
+    READ TABLE lt_precommit_ret WITH KEY type = 'E' TRANSPORTING NO FIELDS.
+    IF sy-subrc = 0.
+      " Error in precommit
+      p_ret_message = 'Error in precommit, in CREATE_PEP_TOPO'(003).
+      p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN.
+    ENDIF.
+
+    " Success
+    IF p_ret_message IS INITIAL.
+
+      p_ret_status  = cc_success.
+      CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+        EXPORTING
+          wait = abap_true.
+
+      "return "PEP TOPO" (same as proj. code)
+      p_elemento_pep = ps_project-projectidsap.
+
+      "get CHAVE_SAP (objnr)
+      SELECT SINGLE objnr
+        FROM proj
+       WHERE pspid = @ps_project-projectidsap
+        INTO @DATA(lv_objnr).
+      IF sy-subrc = 0.
+        p_chave_sap = lv_objnr.
+      ENDIF.
+
+    ENDIF.
+
+  ENDMETHOD.

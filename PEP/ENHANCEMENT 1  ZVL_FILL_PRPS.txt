@@ -1,0 +1,35 @@
+ENHANCEMENT 1  ZVL_FILL_PRPS.    "inactive version
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""$"$\SE:(2) Function Module CJWB_CREATE_PRPS, Start, Enhancement ZVL_FILL_PRPS, Start                                                                         A
+
+" Integration of Projects from EcoSys to SAP, PS.
+" We call BUS2054_CREATE_MULTI,
+" But we could not fill Z-fields there, did not work.
+" So we have exported it by memory ID
+" FROM:
+" CLASS ZCL_VLPS_INTEG_SAP_ECOSYS=>CREATE_PEP_TOPO()
+" CLASS ZCL_VLPS_INTEG_SAP_ECOSYS=>UPDATE_PEP_TOPO()
+*DATA: ls_integ_ecosys_sap TYPE bapi_te_wbs_element.
+*
+*IMPORT ls_integ_ecosys_sap = ls_integ_ecosys_sap FROM MEMORY ID 'ZFIELDS_FROM_INTEGRATION_ECOSYS_SAP'.
+*IF sy-subrc = 0.
+*  i_prps-POSID          = ls_integ_ecosys_sap-wbs_element.
+*  i_prps-zzpriorprj     = ls_integ_ecosys_sap-zzpriorprj.
+*  i_prps-zz_program_l1  = ls_integ_ecosys_sap-zz_program_l1.
+*  i_prps-zz_strategy    = ls_integ_ecosys_sap-zz_strategy.
+*  i_prps-zz_sub_strat   = ls_integ_ecosys_sap-zz_sub_strat.
+*  i_prps-zz_macro_prj   = ls_integ_ecosys_sap-zz_macro_prj.
+*  i_prps-zz_process_l1  = ls_integ_ecosys_sap-zz_process_l1.
+*  i_prps-zz_prod_serv   = ls_integ_ecosys_sap-zz_prod_serv.
+*  i_prps-zzcadeia_valor = ls_integ_ecosys_sap-zzcadeia_valor.
+*  i_prps-zz_pais        = ls_integ_ecosys_sap-zz_pais.
+*  i_prps-zz_stat_1      = ls_integ_ecosys_sap-zz_stat_1.
+*  i_prps-zz_perc_stat_1 = ls_integ_ecosys_sap-zz_perc_stat_1.
+*  i_prps-zz_solic_cod   = ls_integ_ecosys_sap-zz_solic_cod.
+*  i_prps-zz_resp_cod    = ls_integ_ecosys_sap-zz_resp_cod.
+*  i_prps-zzfundid       = ls_integ_ecosys_sap-zzfundid.
+*  "--- Clear memory after use (important!)
+*  FREE MEMORY ID 'ZFIELDS_FROM_INTEGRATION_ECOSYS_SAP'.
+*ENDIF.
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""$"$\SE:(3) Function Module CJWB_CREATE_PRPS, Start, Enhancement ZVL_FILL_PRPS, End                                                                           A
+ENDENHANCEMENT.

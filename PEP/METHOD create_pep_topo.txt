@@ -1,0 +1,325 @@
+  METHOD create_pep_topo.
+
+    CLEAR:
+      p_ret_status,
+      p_ret_message,
+      p_elemento_pep,
+      p_chave_sap.
+
+*--------------------------------------------------------------------*
+* TESTE 3
+*--------------------------------------------------------------------*
+    DATA: lt_wbs_new       TYPE TABLE OF bapi_bus2054_new,
+          ls_wbs_new       TYPE bapi_bus2054_new,
+          lt_extin         TYPE TABLE OF bapiparex,
+          ls_ext           TYPE bapiparex,
+          lt_return        TYPE TABLE OF bapiret2,
+          lt_precommit_ret TYPE TABLE OF bapiret2.
+
+    "--- 1) Basic WBS row(s) to create -------------------------------------------
+    ls_wbs_new-wbs_element               = ps_project-projectidsap.       " **KEY of the WBS you will create**
+    ls_wbs_new-description               = ps_project-descricao.
+    ls_wbs_new-proj_type                 = ps_project-idtipoprojeto.
+    ls_wbs_new-priority                  = ps_project-idprioridade.
+    ls_wbs_new-respsbl_cctr              = ps_project-ccresponsavel.
+    ls_wbs_new-request_cctr              = ps_project-ccsolicitante.
+*ls_wbs_new-location                  = ps_project-idlocalizacao.
+    ls_wbs_new-wbs_basic_start_date      = ps_project-dtinicio.
+    ls_wbs_new-wbs_basic_finish_date     = ps_project-dtfim.
+    APPEND ls_wbs_new TO lt_wbs_new.
+
+"INI teste 1
+*    DATA: lwa_extin TYPE bapiparex.
+*    lwa_extin-structure = 'BAPI_TE_WBS_ELEMENT'.
+*    lwa_extin-valuepart1+0(24)  = ps_project-projectidsap.       " POSID do WBS
+*    lwa_extin-valuepart1+2095(2)  = 'XX'.               " Campo Z1
+*    "lwa_extin-valuepart1+28(4)  = 'ZVAL'.              " Campo Z2
+*    "lwa_extin-valuepart1+32(4)  = 'Z123'.              " Campo Z3
+*    " ... continue conforme necessário
+*    APPEND lwa_extin TO lt_extin.
+"fim teste 1
+
+    "INI teste 2
+    TYPES: BEGIN OF ty_bapi_te_wbs_element,
+             wbs_element    TYPE ps_posid, " Key field for WBS element
+             zzpriorprj     TYPE zzpriorprj,
+             zz_estrategia  TYPE zz_estrategia,
+             ZZ_BUS_LINE    TYPE ZZBUS_LINE,
+             ZZ_GEO         TYPE prps-zz_geo,
+             ZZ_PROGRAM_L1  TYPE ZZ_PROGRAM,
+             ZZ_STRATEGY    TYPE ZZ_STRATEGY,
+             ZZ_SUB_STRAT   TYPE ZZ_SUB_STRAT,
+             ZZ_MACRO_PRJ   TYPE ZZ_PAIS_PRPS,
+             ZZ_PROCESS_L1  TYPE ZZ_PROC,
+             ZZ_PROD_SERV   TYPE ZZ_PROD_SERV,
+             ZZCADEIA_VALOR TYPE ZZCADEIA_VALOR,
+             ZZ_PAIS        TYPE ZZ_PAIS_PRPS,
+             ZZ_STAT_1      TYPE ZZ_STAT1_PRPS,
+             ZZ_PERC_STAT_1 TYPE ZZ_PERC_STAT_1,
+             ZZ_SOLIC_COD   TYPE ZZSOLICCOD,
+             ZZ_RESP_COD    TYPE ZZRESPCOD,
+             ZZFUNDID       TYPE ZZ_FUNDID,
+           END OF ty_bapi_te_wbs_element.
+
+    DATA: ls_custom_data TYPE ty_bapi_te_wbs_element,
+          lt_custom_data TYPE STANDARD TABLE OF ty_bapi_te_wbs_element,
+          ls_extensionin TYPE bapiparex,
+          lt_extensionin TYPE STANDARD TABLE OF bapiparex.
+
+    ls_custom_data-wbs_element    = ps_project-projectidsap. "'PRPS'. " Link to the WBS element being created
+    ls_custom_data-zzpriorprj     = ps_project-IDPrioridade.
+    ls_custom_data-ZZ_PROGRAM_L1  = ps_project-Programa.
+    ls_custom_data-ZZ_STRATEGY    = ps_project-Estrateg.
+    ls_custom_data-ZZ_SUB_STRAT   = ps_project-Subestrateg.
+    ls_custom_data-ZZ_MACRO_PRJ   = ps_project-MacroProj.
+    ls_custom_data-ZZ_PROCESS_L1  = ps_project-Process.
+    ls_custom_data-ZZ_PROD_SERV   = ps_project-DscProduto.
+    ls_custom_data-ZZCADEIA_VALOR = ps_project-Fase.
+    ls_custom_data-ZZ_PAIS        = ps_project-Pais.
+    ls_custom_data-ZZ_STAT_1      = ps_project-Estado.
+    ls_custom_data-ZZ_PERC_STAT_1 = '100'.
+    ls_custom_data-ZZ_SOLIC_COD   = ps_project-IDGerenciaSolicitante.
+    ls_custom_data-ZZ_RESP_COD    = ps_project-IDGerenciaExecutante.
+    ls_custom_data-ZZFUNDID       = ps_project-CodigoFundo.
+   "ls_custom_data-ZZ_BUS_LINE    = 'test busline'.
+   "ls_custom_data-ZZ_GEO         = 'test ZZ_GEO'.
+    APPEND ls_custom_data TO lt_custom_data.
+    CLEAR ls_custom_data.
+
+    LOOP AT lt_custom_data INTO ls_custom_data.
+*      ls_extensionin-structure = 'PRPS'. " Name of your custom structure
+*      ls_extensionin-structure = 'CI_PRPS'. " Name of your custom structure
+      ls_extensionin-structure = 'BAPI_TE_WBS_ELEMENT'. " Name of your custom structure
+      " Move the custom data into the value parts of BAPIPAREX
+      ls_extensionin-valuepart1 = ls_custom_data. " This implicitly handles the field mapping
+      APPEND ls_extensionin TO lt_extensionin.
+      CLEAR ls_extensionin.
+    ENDLOOP.
+    "FIM teste 2
+
+    " clear buffer data
+    CALL FUNCTION 'BAPI_PS_INITIALIZATION'.
+
+    "--- Call the CREATE_MULTI BAPI -------------------------------------------
+    CALL FUNCTION 'BAPI_BUS2054_CREATE_MULTI'
+      EXPORTING
+        i_project_definition = CONV ps_pspid( ps_project-projectidsap )
+      TABLES
+        it_wbs_element       = lt_wbs_new
+        "extensionin          = lt_extin "TESTE 1
+        extensionin          = lt_extensionin "TESTE 2
+        et_return            = lt_return.
+
+    " Error?
+    LOOP AT lt_return INTO DATA(ls_response) WHERE type CO 'EAX' AND id <> 'CNIF_PI'  AND number <> '007'.
+      MESSAGE ID ls_response-id
+              TYPE ls_response-type
+              NUMBER ls_response-number
+              WITH ls_response-message_v1
+                   ls_response-message_v2
+                   ls_response-message_v3
+                   ls_response-message_v4
+              INTO p_ret_message.
+      p_ret_message = |{ p_ret_message };{ ls_response-id };{ ls_response-number }|.
+      p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDLOOP.
+
+    " Pre commit
+    CALL FUNCTION 'BAPI_PS_PRECOMMIT'
+      TABLES
+        et_return = lt_precommit_ret. "#EC CI_SEL_NESTED or "#EC CI_SROFC_NESTED
+
+    READ TABLE lt_precommit_ret WITH KEY type = 'E' TRANSPORTING NO FIELDS.
+    IF sy-subrc = 0.
+      " Error in precommit
+      p_ret_message = 'Error in precommit, in CREATE_PEP_TOPO'(003).
+      p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN.
+    ENDIF.
+
+    " Success
+    IF p_ret_message IS INITIAL.
+
+      p_ret_status  = cc_success.
+      CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+        EXPORTING
+          wait = abap_true.
+
+      "return "PEP TOPO" (same as proj. code)
+      p_elemento_pep = ps_project-projectidsap.
+
+      "get CHAVE_SAP (objnr)
+      SELECT SINGLE objnr
+        FROM proj
+       WHERE pspid = @ps_project-projectidsap
+        INTO @DATA(lv_objnr).
+      IF sy-subrc = 0.
+        p_chave_sap = lv_objnr.
+      ENDIF.
+
+    ENDIF.
+
+*--------------------------------------------------------------------*
+* TESTE 2
+*--------------------------------------------------------------------*
+
+*    DATA: lt_wbs_new TYPE TABLE OF bapi_bus2054_new,
+*          ls_wbs_new TYPE bapi_bus2054_new,
+*          lt_extin   TYPE TABLE OF bapiparex,
+*          ls_ext     TYPE bapiparex,
+*          lt_return  TYPE TABLE OF bapiret2.
+*
+*    "--- 1) Basic WBS row(s) to create -------------------------------------------
+*    ls_wbs_new-wbs_element               = ps_project-projectidsap.       " **KEY of the WBS you will create**
+*    ls_wbs_new-description               = ps_project-descricao.
+*    ls_wbs_new-proj_type                 = ps_project-idtipoprojeto.
+*    ls_wbs_new-priority                  = ps_project-idprioridade.
+*    ls_wbs_new-respsbl_cctr              = ps_project-ccresponsavel.
+*    ls_wbs_new-request_cctr              = ps_project-ccsolicitante.
+**ls_wbs_new-location                  = ps_project-idlocalizacao.
+*    ls_wbs_new-wbs_basic_start_date      = ps_project-dtinicio.
+*    ls_wbs_new-wbs_basic_finish_date     = ps_project-dtfim.
+*
+*APPEND ls_wbs_new TO lt_wbs_new.
+*
+*"--- 2) TE / TEx for CI_PRPS (custom fields) ---------------------------------
+*DATA: ls_tewbs   TYPE bapi_te_wbs_element.
+**      ls_tewbsx  TYPE bapi_te_wbs_elementx.
+*
+*ls_tewbs-wbs_element  = ps_project-projectidsap.      " **MUST fill the KEY**
+*ls_tewbs-zzpriorprj   = ps_project-nivelprioridade. " <- your CI_PRPS field value
+*
+*" 3) Try to use the X-structure if the system has it
+*DATA gv_has_tex TYPE abap_bool.
+*TRY.
+*    DATA(lo_tdescr) = cl_abap_typedescr=>describe_by_name( 'BAPI_TE_WBS_ELEMENTX' ).
+*    gv_has_tex = abap_true.
+*  CATCH cx_root.
+*    gv_has_tex = abap_false.
+*ENDTRY.
+*
+*ls_tewbsx-wbs_element = ps_project-projectidsap.
+*ls_tewbsx-zzpriorprjx = abap_true.                     " field is provided/changed
+*
+*"Pack into BAPIPAREX
+*ls_ext = pack_into_bapiparex(
+*  EXPORTING iv_struct_name = 'BAPI_TE_WBS_ELEMENT'
+*            is_data        = ls_tewbs ).
+*APPEND ls_ext TO lt_extin.
+*
+*ls_ext = pack_into_bapiparex(
+*  EXPORTING iv_struct_name = 'BAPI_TE_WBS_ELEMENTX'
+*            is_data        = ls_tewbsx ).
+*APPEND ls_ext TO lt_extin.
+
+    " NOVA TENTATIVA campos Zs, na água (08/09/2025)
+***DATA: ls_te    TYPE bapi_te_wbs_element,
+***      ls_tex   TYPE bapi_te_wbs_elementx.
+***
+***CLEAR: ls_te, ls_tex.
+***
+***" Always identify which WBS these Z-fields belong to:
+***ls_te-posid  = ls_wbs_new-wbs_element.
+***ls_tex-posid = ls_wbs_new-wbs_element.
+***
+***" >>> Your custom Z-fields (examples):
+***ls_te-zzpriorprj = ps_project-zzpriorprj. " value you want to set
+***ls_tex-zzpriorprj = 'X'.                  " mark as provided
+
+*    "--- 3) Call the CREATE_MULTI BAPI -------------------------------------------
+*    CALL FUNCTION 'BAPI_BUS2054_CREATE_MULTI'
+*      EXPORTING
+*        i_project_definition = ps_project-projectidsap
+*      TABLES
+*        IT_WBS_ELEMENT  = lt_wbs_new
+**        extensionin          = lt_extin
+*        et_return       = lt_return.
+
+*****"--- 4) Check messages, then COMMIT ------------------------------------------
+*****READ TABLE lt_return WITH KEY type = 'E' TRANSPORTING NO FIELDS.
+*****IF sy-subrc <> 0.
+*****  CALL FUNCTION 'BAPI_TRANSACTION_COMMIT' EXPORTING wait = abap_true.
+*****ELSE.
+*****  CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+*****ENDIF.
+
+*--------------------------------------------------------------------*
+*ORIGINAL
+*--------------------------------------------------------------------*
+*    DATA:
+*      ls_project_definition TYPE bapi_project_definition,
+*      lt_wbs                TYPE TABLE OF bapi_bus2054_new,
+*      ls_wbs                TYPE bapi_bus2054_new,
+*      lt_return             TYPE TABLE OF bapiret2.
+*
+*    CLEAR:
+*      p_ret_status,
+*      p_ret_message.
+*
+*    ls_project_definition-project_definition = ps_project-projectidsap.
+*
+*    ls_wbs-wbs_element           = ps_project-projectidsap. " do not have '.01'.       "ou igual ao PSPID, conforme máscara
+*    ls_wbs-description           = ps_project-descricao.
+*    ls_wbs-proj_type             = ps_project-idtipoprojeto.
+*    ls_wbs-priority              = ps_project-idprioridade.
+*    ls_wbs-respsbl_cctr          = ps_project-ccresponsavel.
+*    ls_wbs-request_cctr          = ps_project-ccsolicitante.
+*    ls_wbs-location              = ps_project-idlocalizacao.
+*    ls_wbs-wbs_basic_start_date  = ps_project-dtinicio.
+*    ls_wbs-wbs_basic_finish_date = ps_project-dtfim.
+*
+*    " Ex.: USR Zfields
+*    "ls_wbs-user_field_char10_1   = COND #( WHEN ls_item-vpprojetos = 'X' THEN 'X' ).
+*
+*    APPEND ls_wbs TO lt_wbs.
+*
+*    "Custom fields
+*    DATA: ls_te    TYPE bapi_te_project_definition,
+*          ls_extin TYPE bapiparex.
+*
+*    ls_te-project_definition = ps_project-projectidsap.
+*    ls_te-ZZ_PROJFLAG         = abap_true.
+*
+*    ls_extin = pack_into_bapiparex(
+*      EXPORTING
+*    iv_struct_name = 'BAPI_TE_PROJECT_DEFINITION'
+*    is_data        = ls_te ).
+*    APPEND ls_extin TO lt_extensionin.
+*
+*    CALL FUNCTION 'BAPI_PROJECT_MAINTAIN'
+*      EXPORTING
+*        i_project_definition = ls_project_definition
+*      TABLES
+*        i_wbs_element_table  = lt_wbs
+*        return               = lt_return.
+*
+*    " Error?
+*    LOOP AT lt_return INTO DATA(ls_response) WHERE type CO 'EAX'.
+*      MESSAGE ID ls_response-id
+*              TYPE ls_response-type
+*              NUMBER ls_response-number
+*              WITH ls_response-message_v1
+*                   ls_response-message_v2
+*                   ls_response-message_v3
+*                   ls_response-message_v4
+*              INTO p_ret_message.
+*      p_ret_message = |{ p_ret_message };{ ls_response-id };{ ls_response-number }|.
+*      p_ret_status = cc_error.
+*
+*      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+*
+*      RETURN. "exit method
+*    ENDLOOP.
+*
+*    " Success
+*    IF p_ret_message IS INITIAL.
+*      p_ret_status  = cc_success.
+*      CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+*        EXPORTING
+*          wait = abap_true.
+*    ENDIF.
+
+  ENDMETHOD.
