@@ -1,0 +1,765 @@
+*&---------------------------------------------------------------------*
+*& Include          ZPS_CARGA_PEP_FULL_P01
+*&---------------------------------------------------------------------*
+CLASS lcl_pgm IMPLEMENTATION.
+
+  METHOD get_filename.
+
+    DATA: t_filetable TYPE TABLE OF file_table,
+          vl_return   TYPE i.
+
+    CLEAR r_filename.
+
+    CALL METHOD cl_gui_frontend_services=>file_open_dialog
+      EXPORTING
+        file_filter = '*.CSV'
+      CHANGING
+        file_table  = t_filetable
+        rc          = vl_return.
+
+    TRY.
+        r_filename = t_filetable[ 1 ]-filename.
+      CATCH cx_sy_itab_line_not_found ##NO_HANDLER.
+    ENDTRY.
+
+  ENDMETHOD.
+
+  METHOD load_file.
+
+    DATA: t_arq_line TYPE TABLE OF string.
+
+    DATA: wa_arq_line TYPE string.
+
+    DATA: vl_msg  TYPE string,
+          vl_file TYPE string.
+
+    vl_file = p_file.
+
+    CALL METHOD cl_gui_frontend_services=>gui_upload
+      EXPORTING
+        filename                = vl_file
+      CHANGING
+        data_tab                = t_arq_line
+      EXCEPTIONS
+        file_open_error         = 1
+        file_read_error         = 2
+        no_batch                = 3
+        gui_refuse_filetransfer = 4
+        invalid_type            = 5
+        no_authority            = 6
+        unknown_error           = 7
+        bad_data_format         = 8
+        header_not_allowed      = 9
+        separator_not_allowed   = 10
+        header_too_long         = 11
+        unknown_dp_error        = 12
+        access_denied           = 13
+        dp_out_of_memory        = 14
+        disk_full               = 15
+        dp_timeout              = 16
+        not_supported_by_gui    = 17
+        error_no_gui            = 18
+        OTHERS                  = 19.
+
+    IF sy-subrc <> 0.
+
+      MESSAGE ID sy-msgid TYPE c_msg-error NUMBER sy-msgno
+         WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4 INTO e_return-message.
+      e_return-status = c_msg-error.
+
+      RETURN.
+
+    ENDIF.
+
+    e_t_file = convert_file( t_arq_line ).
+
+  ENDMETHOD.
+
+  METHOD convert_file.
+
+    DATA: vl_strlen         TYPE i.
+    DATA: wa_file           TYPE ty_file_ent,
+          vl_dsc_vazao_char TYPE char16,
+          vl_ac_date        TYPE char10,
+          vl_num_pont       TYPE int1.
+
+    CLEAR r_t_file[].
+
+    LOOP AT i_t_file ASSIGNING FIELD-SYMBOL(<fs_line>)
+      FROM 2.
+
+      CLEAR wa_file.
+
+      SPLIT <fs_line> AT c_sep
+            INTO wa_file-nivel
+                 wa_file-pep
+                 wa_file-descricao
+                 wa_file-centro_custo
+                 wa_file-centro_lucro
+                 wa_file-resp
+                 wa_file-responsavel
+                 wa_file-empr
+                 wa_file-mi
+                 wa_file-ger_projeto
+                 wa_file-negocio
+                 wa_file-estruturainvest
+                 wa_file-programainvest
+                 wa_file-ano
+                 wa_file-tipoprojeto
+                 wa_file-centro_proj
+                 wa_file-data_inicio_proj
+                 wa_file-perfil_proj
+                 wa_file-contract_manage
+                 wa_file-ggo
+                 wa_file-data_fim_proj
+                 wa_file-wbs_up. "deixar no final
+
+      IF wa_file-data_inicio_proj IS NOT INITIAL.
+        CONCATENATE wa_file-data_inicio_proj+6(4) wa_file-data_inicio_proj+3(2) wa_file-data_inicio_proj(2) INTO DATA(lv_data).
+        wa_file-data_inicio_proj = lv_data.
+      ENDIF.
+
+      IF wa_file-data_fim_proj IS NOT INITIAL.
+        CONCATENATE wa_file-data_fim_proj+6(4) wa_file-data_fim_proj+3(2) wa_file-data_fim_proj(2) INTO DATA(lv_dataf).
+        wa_file-data_fim_proj = lv_dataf.
+      ENDIF.
+
+      IF wa_file-pep IS NOT INITIAL.
+
+        CASE wa_file-nivel.
+          WHEN '1'.
+            MOVE space TO wa_file-wbs_up.
+          WHEN '2'.
+            MOVE wa_file-pep(9) TO wa_file-wbs_up.
+          WHEN '3'.
+            MOVE wa_file-pep(12) TO wa_file-wbs_up.
+          WHEN '4'.
+            MOVE wa_file-pep(15) TO wa_file-wbs_up.
+          WHEN '5'.
+            MOVE wa_file-pep(18) TO wa_file-wbs_up.
+          WHEN '6'.
+            MOVE wa_file-pep(21) TO wa_file-wbs_up.
+        ENDCASE.
+
+      ENDIF.
+
+      APPEND wa_file TO r_t_file.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD create_proj.
+
+    "p_proj
+    DATA: ls_stru     TYPE bapi_project_definition,
+          lt_ret_proj TYPE bapireturn1,
+          ls_ret_1    TYPE bapireturn1,
+          lv_proj     TYPE ps_pspid,
+          lv_int      TYPE ps_intnr.
+
+    "p_pep
+    DATA: ls_header      TYPE thead,
+          lv_msg         TYPE string,
+          lv_tdid        TYPE string,
+          s_element      TYPE bapi_bus2054_new,
+          t_element      TYPE STANDARD TABLE OF bapi_bus2054_new,
+          lv_estinvest   TYPE string,
+          lv_proginvest  TYPE string,
+          lv_ano         TYPE string,
+          lv_tipoprojeto TYPE string,
+          lv_pep         TYPE ps_posid,
+          lt_return      TYPE STANDARD TABLE OF bapiret2,
+          lv_projectdef  TYPE bapi_bus2001_new-project_definition.
+
+    "p_pos_inv
+    DATA: p_mode  LIKE sy-binpt VALUE 'N',
+          ls_prps TYPE prps-posid.
+
+    CLEAR r_t_log[].
+
+    IF i_t_file[] IS NOT INITIAL.
+
+      LOOP AT i_t_file ASSIGNING FIELD-SYMBOL(<fs_file>).
+
+        IF p_proj IS NOT INITIAL AND <fs_file>-nivel = '0'.
+
+          APPEND INITIAL LINE TO r_t_log ASSIGNING FIELD-SYMBOL(<fs_log>).
+          MOVE-CORRESPONDING <fs_file> TO <fs_log>.
+
+
+          IF <fs_file>-pep IS NOT INITIAL AND <fs_file>-perfil_proj IS NOT INITIAL.
+
+            CLEAR: lt_ret_proj, ls_stru, ls_ret_1.
+
+            CALL FUNCTION 'CONVERSION_EXIT_ABPSN_INPUT'
+              EXPORTING
+                input  = <fs_file>-pep
+              IMPORTING
+                output = lv_proj.
+
+            lv_int = lv_proj.
+
+            CALL FUNCTION 'BAPI_PROJECTDEF_GETDETAIL'
+              EXPORTING
+                currentexternalproje = lv_proj
+                currentinternalproje = lv_int
+              IMPORTING
+*               PROJECT_DEFINITION_STRU       =
+                return               = ls_ret_1.
+
+            IF ls_ret_1-type = ' '.
+              <fs_log>-icon     = icon_okay.
+              <fs_log>-status   = c_msg-success.
+              <fs_log>-message  = 'Projeto já existente'.
+              CONTINUE.
+            ENDIF.
+
+            ls_stru-project_definition = <fs_file>-pep.
+            ls_stru-description = <fs_file>-descricao.
+            ls_stru-profit_ctr = <fs_file>-centro_lucro.
+            ls_stru-project_profile = <fs_file>-perfil_proj.
+            ls_stru-plant = <fs_file>-centro_proj.
+*            CONCATENATE <fs_file>-data_inicio_proj+6(4) <fs_file>-data_inicio_proj+3(2) <fs_file>-data_inicio_proj(2) INTO DATA(lv_data).
+            ls_stru-start = <fs_file>-data_inicio_proj.
+            ls_stru-finish = <fs_file>-data_fim_proj.
+
+            CALL FUNCTION 'BAPI_PROJECTDEF_CREATE'
+              EXPORTING
+                project_definition_stru = ls_stru
+              IMPORTING
+                return                  = lt_ret_proj.
+
+            IF lt_ret_proj-type = c_msg-error.
+
+              CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+
+              <fs_log>-icon     = icon_cancel.
+              <fs_log>-status   = c_msg-error.
+              <fs_log>-message  = lt_ret_proj-message.
+
+            ELSE.
+
+              <fs_log>-icon     = icon_okay.
+              <fs_log>-status   = c_msg-success.
+              <fs_log>-message  = lt_ret_proj-message.
+
+              IF <fs_log>-message IS INITIAL.
+                <fs_log>-message = 'Projeto criado com sucesso.'(s01).
+              ENDIF.
+
+              CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+                EXPORTING
+                  wait = abap_true.
+
+            ENDIF.
+
+          ELSE. "caso faltarem dados
+
+            <fs_log>-icon     = icon_cancel.
+            <fs_log>-status   = c_msg-error.
+            <fs_log>-message  = 'Não há dados suficientes para criação do projeto'.
+
+          ENDIF.
+        ENDIF.
+
+        "criação dos PEPs
+        IF p_pep IS NOT INITIAL AND  <fs_file>-nivel <> '0'.
+
+          APPEND INITIAL LINE TO r_t_log ASSIGNING <fs_log>.
+          MOVE-CORRESPONDING <fs_file> TO <fs_log>.
+
+          CLEAR: s_element, t_element[].
+
+          CALL FUNCTION 'CONVERSION_EXIT_ABPSN_INPUT'
+            EXPORTING
+              input  = <fs_file>-pep
+            IMPORTING
+              output = lv_pep.
+
+          SELECT *
+            FROM prps
+            INTO TABLE @DATA(it_prps)
+            WHERE posid = @lv_pep.
+
+          IF sy-subrc IS NOT INITIAL. "verifica se ja existe
+
+            s_element-wbs_element = <fs_file>-pep.
+            s_element-description = <fs_file>-descricao.
+            s_element-responsible_no = <fs_file>-responsavel    .
+            s_element-company_code = <fs_file>-empr    .
+            s_element-profit_ctr = <fs_file>-centro_lucro    .
+            s_element-proj_type = <fs_file>-tipoprojeto.
+            s_element-respsbl_cctr = <fs_file>-centro_custo   .
+            s_element-user_field_char20_1 = <fs_file>-ger_projeto.
+            s_element-user_field_char20_2 = <fs_file>-negocio.
+            s_element-user_field_char10_1 = <fs_file>-contract_manage.
+            s_element-user_field_char10_2 = <fs_file>-ggo.
+            s_element-inv_reason  = <fs_file>-mi    .
+            s_element-wbs_up = <fs_file>-wbs_up.
+
+            APPEND s_element TO t_element.
+
+            CALL FUNCTION 'BAPI_PS_INITIALIZATION'.
+
+            lv_projectdef = <fs_file>-pep(7).
+
+            CALL FUNCTION 'BAPI_BUS2054_CREATE_MULTI'
+              EXPORTING
+                i_project_definition = lv_projectdef
+              TABLES
+                it_wbs_element       = t_element
+                et_return            = lt_return
+              EXCEPTIONS
+                error_message        = 1
+                OTHERS               = 2.
+
+            IF sy-subrc <> 0.
+
+              READ TABLE lt_return INTO DATA(wa_return_multi) WITH KEY type = 'E'.
+
+              CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+              <fs_log>-icon     = icon_cancel.
+              <fs_log>-status   = c_msg-error.
+              <fs_log>-message  = wa_return_multi-message.
+
+              CONTINUE.
+
+            ELSE.
+
+              CALL FUNCTION 'BAPI_PS_PRECOMMIT'
+                TABLES
+                  et_return = lt_return.
+
+              READ TABLE lt_return INTO DATA(wa_return_pre) WITH KEY type = 'E'.
+
+              IF sy-subrc IS INITIAL.
+                <fs_log>-icon     = icon_cancel.
+                <fs_log>-status   = c_msg-error.
+                <fs_log>-message  = wa_return_pre-message.
+
+                CONTINUE.
+              ELSE.
+                CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+                  EXPORTING
+                    wait = abap_true.
+
+                <fs_log>-icon     = icon_okay.
+                <fs_log>-status   = c_msg-success.
+                <fs_log>-message  = wa_return_pre-message.
+
+                IF <fs_log>-message IS INITIAL.
+                  <fs_log>-message = 'PEP criado com sucesso.'(s01).
+                ENDIF.
+              ENDIF.
+
+            ENDIF.
+
+          ELSE.
+
+            <fs_log>-icon     = icon_okay.
+            <fs_log>-status   = c_msg-success.
+            <fs_log>-message  = 'Pep já existente!'.
+            CONTINUE.
+
+          ENDIF.
+
+        ENDIF.
+
+        "criação da posição de investimento
+        IF p_pos_im IS NOT INITIAL AND <fs_file>-estruturainvest IS NOT INITIAL.
+
+          CLEAR: it_bdcdata[], it_msg[].
+
+          APPEND INITIAL LINE TO r_t_log ASSIGNING <fs_log>.
+          MOVE-CORRESPONDING <fs_file> TO <fs_log>.
+
+          CALL FUNCTION 'CONVERSION_EXIT_ABPSN_INPUT'
+            EXPORTING
+              input  = <fs_file>-pep
+            IMPORTING
+              output = lv_pep.
+
+          ls_prps = lv_pep.
+
+          SELECT posid
+            INTO TABLE @DATA(lt_posid)
+            FROM prps
+            WHERE posid = @ls_prps.
+
+          IF sy-subrc IS INITIAL.
+
+            ano = <fs_file>-ano.
+            pos_inv = <fs_file>-estruturainvest.
+            prg_inv = <fs_file>-programainvest.
+            pep = <fs_file>-pep.
+
+            CALL METHOD preenche_bdc
+              EXPORTING
+                dynbegin = 'X'
+                name     = 'SAPLCJWB'
+                value    = '0100'.
+
+            CALL METHOD preenche_value
+              EXPORTING
+                name  = 'BDC_CURSOR'
+                value = '*PRPS-POSID'.
+
+            CALL METHOD preenche_value
+              EXPORTING
+                name  = 'BDC_OKCODE'
+                value = '=LETB'.
+
+            CALL METHOD preenche_value
+              EXPORTING
+                name  = '*PROJ-PSPID'
+                value = ' '.
+
+            CALL METHOD preenche_value
+              EXPORTING
+                name  = '*PRPS-POSID'
+                value = pep.
+
+            CALL METHOD preenche_bdc
+              EXPORTING
+                dynbegin = 'X'
+                name     = 'SAPLCJWB'
+                value    = '0901'.
+
+            CALL METHOD preenche_value
+              EXPORTING
+                name  = 'BDC_OKCODE'
+                value = '=AIPP'.
+
+            CALL METHOD preenche_value
+              EXPORTING
+                name  = 'BDC_SUBSCR'
+                value = 'SAPLCJWB                                0902LISTE'.
+
+            CALL METHOD preenche_value
+              EXPORTING
+                name  = 'BDC_CURSOR'
+                value = 'RCWBS-IDENT(01)'.
+
+            CALL METHOD preenche_value
+              EXPORTING
+                name  = 'RCJ_MARKL-MARK(01)'
+                value = 'X'.
+
+            CALL METHOD preenche_value
+              EXPORTING
+                name  = 'BDC_SUBSCR'
+                value = 'SAPLCJWB                                3993BUTTONS'.
+
+            CALL METHOD preenche_bdc
+              EXPORTING
+                dynbegin = 'X'
+                name     = 'SAPLAIPP'
+                value    = '0050'.
+
+            CALL METHOD preenche_value
+              EXPORTING
+                name  = 'BDC_CURSOR'
+                value = 'RAIP1-POSID'.
+
+            CALL METHOD preenche_value
+              EXPORTING
+                name  = 'BDC_OKCODE'
+                value = '=TAKE'.
+
+            CALL METHOD preenche_value
+              EXPORTING
+                name  = 'RAIP1-PRNAM'
+                value = prg_inv.
+
+            CALL METHOD preenche_value
+              EXPORTING
+                name  = 'RAIP1-POSID'
+                value = pos_inv.
+
+            CALL METHOD preenche_value
+              EXPORTING
+                name  = 'RAIP1-GJAHR'
+                value = ano.
+
+            CALL METHOD preenche_bdc
+              EXPORTING
+                dynbegin = 'X'
+                name     = 'SAPLCJWB'
+                value    = '0901'.
+
+            CALL METHOD preenche_value
+              EXPORTING
+                name  = 'BDC_OKCODE'
+                value = '=BU'.
+
+            CALL METHOD preenche_value
+              EXPORTING
+                name  = 'BDC_SUBSCR'
+                value = 'SAPLCJWB                                0902LISTE'.
+
+            CALL METHOD preenche_value
+              EXPORTING
+                name  = 'BDC_CURSOR'
+                value = 'RCWBS-IDENT(01)'.
+
+            CALL METHOD preenche_value
+              EXPORTING
+                name  = 'BDC_SUBSCR'
+                value = 'SAPLCJWB                                3993BUTTONS'.
+
+
+            CALL TRANSACTION 'CJ02' USING it_bdcdata
+                                      MODE p_mode
+                                      UPDATE 'S'
+                                      MESSAGES INTO it_msg.
+
+            READ TABLE it_msg INTO DATA(wa_msg) WITH KEY msgtyp = 'E'.
+
+            IF sy-subrc IS INITIAL.
+
+              <fs_log>-icon     = icon_cancel.
+              <fs_log>-status   = c_msg-error.
+              CONCATENATE wa_msg-msgv1 wa_msg-msgv2 wa_msg-msgv3 wa_msg-msgv4 INTO  <fs_log>-message  SEPARATED BY space.
+              CONTINUE.
+
+            ELSE.
+              <fs_log>-icon     = icon_okay.
+              <fs_log>-status   = c_msg-success.
+              <fs_log>-message  = 'Sucesso - pos. investimento'.
+              CONTINUE.
+            ENDIF.
+
+          ELSE.
+            <fs_log>-icon     = icon_cancel.
+            <fs_log>-status   = c_msg-error.
+            <fs_log>-message  = 'PEP não encontrado - falha pos. investimento'.
+            CONTINUE.
+          ENDIF.
+
+
+        ENDIF.
+
+      ENDLOOP.
+    ENDIF.
+
+  ENDMETHOD.
+*
+  METHOD show_log.
+
+*   Variáveis locais
+    DATA: o_column      TYPE REF TO cl_salv_column_table.
+    DATA: wa_layout_key TYPE salv_s_layout_key.
+
+    IF i_t_log[] IS INITIAL.
+
+      MESSAGE s398(00) WITH 'Não há dados para processamento.'(e10) DISPLAY LIKE c_msg-error.
+
+    ELSE.
+
+      DATA(t_log) = i_t_log[].
+
+      IF rb_err IS NOT INITIAL.
+
+        DELETE t_log WHERE status = 'S'.
+
+      ENDIF.
+
+*     Referencia ALV
+      TRY.
+          cl_salv_table=>factory( IMPORTING r_salv_table = DATA(r_alv)
+                                  CHANGING  t_table      = t_log[] ).
+        CATCH cx_salv_msg INTO DATA(vl_msg) ##NEEDED ##NO_HANDLER.
+      ENDTRY.
+
+      IF NOT pfstatus IS INITIAL.
+
+*       Definindo Status Gui
+        r_alv->set_screen_status( pfstatus      = pfstatus
+                                  report        = sy-repid
+                                  set_functions = r_alv->c_functions_all ).
+
+      ELSE.
+
+*       Insere botões default no ALV
+        DATA(vl_functions) = r_alv->get_functions( ).
+        vl_functions->set_all( abap_true ).
+
+      ENDIF.
+
+*     Forma de seleção de linhas e colunas
+      DATA(r_selections) = r_alv->get_selections( ).
+      r_selections->set_selection_mode( if_salv_c_selection_mode=>row_column ).
+
+*     Obtém todas as colunas do ALV
+      DATA(o_columns) = r_alv->get_columns( ).
+
+*     Otimiza o tamanho das colunas
+      o_columns->set_optimize( abap_true ).
+      o_columns->set_key_fixation( abap_false ).
+
+
+      IF r_alv IS NOT INITIAL.
+        MOVE sy-repid TO wa_layout_key-report.  "Set Layout Key as Report ID"
+        DATA(o_layout) = r_alv->get_layout( ).  "Get Layout of the Table"
+        o_layout->set_key( wa_layout_key ).     "Set Layout key to Layout"
+      ENDIF.
+
+*     Global Display Settings  *******
+      DATA(o_display) = r_alv->get_display_settings( ).           "Global Display settings"
+      o_display->set_striped_pattern( if_salv_c_bool_sap=>true ). "Activate Strip Pattern"
+      o_display->set_list_header( 'Carga de elementos PEP'(900) ).  "Report Header"
+
+*     Exibe o ALV
+      r_alv->display( ).
+
+    ENDIF.
+
+  ENDMETHOD.
+
+  METHOD set_checkbox.
+
+    TRY.
+
+        ch_column ?= i_columns->get_column( i_campo ).
+        IF i_checkbox = abap_true.
+          ch_column->set_cell_type( value = if_salv_c_cell_type=>checkbox ).
+        ELSE.
+          ch_column->set_cell_type( value = if_salv_c_cell_type=>text ).
+        ENDIF.
+
+      CATCH cx_salv_not_found INTO DATA(vl_msg2) ##NEEDED ##NO_HANDLER.
+    ENDTRY.
+*
+  ENDMETHOD.
+*
+  METHOD screen.
+
+    LOOP AT SCREEN.
+
+      IF screen-group1 = 'BBB'.
+
+        IF rb_proc = abap_true.
+          screen-input     = 0.
+          screen-invisible = 1.
+        ELSE.
+          screen-input     = 1.
+          screen-invisible = 0.
+        ENDIF.
+        MODIFY SCREEN.
+      ENDIF.
+
+      IF screen-group1 = 'OPT'.
+
+        IF rb_proc = abap_true.
+          screen-input     = 1.
+          screen-invisible = 0.
+        ELSE.
+          screen-input     = 0.
+          screen-invisible = 1.
+        ENDIF.
+        MODIFY SCREEN.
+      ENDIF.
+
+      IF screen-group1 = 'OP1'.
+
+        IF rb_proc = abap_true.
+          screen-input     = 1.
+          screen-invisible = 0.
+        ELSE.
+          screen-input     = 0.
+          screen-invisible = 1.
+        ENDIF.
+        MODIFY SCREEN.
+      ENDIF.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+*
+  METHOD upload.
+
+    DATA: t_file TYPE STANDARD TABLE OF zpst0001 WITH DEFAULT KEY.
+
+    CLEAR r_return.
+
+    LOOP AT i_t_file ASSIGNING FIELD-SYMBOL(<fs_file>).
+
+      APPEND INITIAL LINE TO t_file ASSIGNING FIELD-SYMBOL(<fs_up>).
+      <fs_up> = CORRESPONDING #( <fs_file> ).
+
+    ENDLOOP.
+
+    DELETE FROM zpst0001.
+    COMMIT WORK AND WAIT.
+
+    MODIFY zpst0001 FROM TABLE t_file.
+
+    IF sy-subrc IS INITIAL.
+      COMMIT WORK AND WAIT.
+      r_return-status  = c_msg-success.
+      r_return-message = 'Upload realizado com sucesso.'(s02).
+    ELSE.
+      ROLLBACK WORK.
+      r_return-status  = c_msg-error.
+      r_return-message = 'Erro ao fazer o Upload.'(e09).
+    ENDIF.
+
+  ENDMETHOD.
+*
+  METHOD data_read.
+
+    CLEAR r_t_file[].
+
+    SELECT nivel,
+           pep,
+           descricao,
+           centro_custo,
+           centro_lucro,
+           resp,
+           responsavel,
+           empr,
+           mi,
+           ger_projeto,
+           negocio,
+           estruturainvest,
+           programainvest,
+           ano,
+           tipoprojeto,
+           centro_proj,
+           data_inicio_proj,
+           perfil_proj,
+           contract_manage,
+           ggo,
+           data_fim_proj,
+           wbs_up
+      FROM zpst0001
+      INTO TABLE @r_t_file.
+
+
+    DELETE FROM zpst0001.
+    COMMIT WORK AND WAIT.
+
+  ENDMETHOD.
+
+  METHOD preenche_bdc.
+
+    MOVE: name      TO wa_bdcdata-program,
+          value     TO wa_bdcdata-dynpro,
+          dynbegin  TO wa_bdcdata-dynbegin.
+    APPEND wa_bdcdata TO it_bdcdata.
+
+    CLEAR wa_bdcdata.
+
+  ENDMETHOD.
+
+  METHOD preenche_value.
+
+    MOVE: name  TO wa_bdcdata-fnam,
+          value TO wa_bdcdata-fval.
+    APPEND wa_bdcdata TO it_bdcdata.
+
+    CLEAR wa_bdcdata.
+
+  ENDMETHOD.
+ENDCLASS.

@@ -1,0 +1,50 @@
+*&---------------------------------------------------------------------*
+*& Include          ZPS_CARGA_PEP_FULL_EVT
+*&---------------------------------------------------------------------*
+
+*--------------------------------------------------------------------*
+AT SELECTION-SCREEN OUTPUT.
+  lcl_pgm=>screen( ).
+
+*--------------------------------------------------------------------*
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_file.
+  p_file = lcl_pgm=>get_filename( ).
+
+*--------------------------------------------------------------------*
+AT SELECTION-SCREEN.
+  IF rb_up = abap_true AND
+     p_file IS INITIAL AND
+    sy-ucomm = 'ONLI'.
+    SET CURSOR FIELD 'P_FILE'.
+    MESSAGE e398(00) WITH 'Preencher o campo Arquivo'(i01).
+  ENDIF.
+
+
+*--------------------------------------------------------------------*
+START-OF-SELECTION.
+
+  CASE abap_true.
+
+    WHEN rb_up.
+
+      lcl_pgm=>load_file( IMPORTING e_t_file = DATA(t_file)
+                                    e_return = DATA(wa_return) ).
+
+      IF wa_return-status = lcl_pgm=>c_msg-error.
+        MESSAGE s398(00) WITH wa_return-message space space space DISPLAY LIKE 'E'.
+      ELSE.
+
+        wa_return = lcl_pgm=>upload( t_file ).
+
+        IF wa_return-status = lcl_pgm=>c_msg-error.
+          MESSAGE s398(00) WITH wa_return-message space space space DISPLAY LIKE 'E'.
+        ELSE.
+          MESSAGE s398(00) WITH wa_return-message space space space.
+        ENDIF.
+
+      ENDIF.
+
+    WHEN rb_proc.
+      lcl_pgm=>show_log( lcl_pgm=>create_proj( lcl_pgm=>data_read( ) ) ).
+
+  ENDCASE.

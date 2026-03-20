@@ -1,0 +1,125 @@
+  METHOD update_pep_topo.
+
+    CLEAR:
+      p_ret_status,
+      p_ret_message.
+
+    DATA:
+      lt_wbs     TYPE TABLE OF bapi_bus2054_chg,
+      ls_wbs     TYPE bapi_bus2054_chg,
+      lt_wbs_upd TYPE TABLE OF bapi_bus2054_upd,
+      ls_wbs_upd TYPE bapi_bus2054_upd,
+      lt_return  TYPE TABLE OF bapiret2.
+
+    ls_wbs-wbs_element               = ps_project-projectidsap.       " **KEY of the WBS you will create**
+    ls_wbs-description               = ps_project-descricao.
+    ls_wbs-proj_type                 = ps_project-idtipoprojeto.
+    ls_wbs-priority                  = ps_project-idprioridade.
+    ls_wbs-profit_ctr                = ps_project-idcentrolucro.
+    ls_wbs-respsbl_cctr              = ps_project-ccresponsavel.
+    ls_wbs-request_cctr              = ps_project-ccsolicitante.
+    ls_wbs-location                  = ps_project-idlocalizacao.
+    ls_wbs-wbs_basic_start_date      = ps_project-dtinicio.
+    ls_wbs-wbs_basic_finish_date     = ps_project-dtfim.
+    APPEND ls_wbs TO lt_wbs.
+
+    ls_wbs_upd-wbs_element               = ps_project-projectidsap.       " KEY of the WBS
+    ls_wbs_upd-description               = abap_true.
+    ls_wbs_upd-proj_type                 = abap_true.
+    ls_wbs_upd-priority                  = abap_true.
+    ls_wbs_upd-respsbl_cctr              = abap_true.
+    ls_wbs_upd-request_cctr              = abap_true.
+    ls_wbs_upd-location                  = abap_true.
+    ls_wbs_upd-wbs_basic_start_date      = abap_true.
+    ls_wbs_upd-wbs_basic_finish_date     = abap_true.
+    APPEND ls_wbs_upd TO lt_wbs_upd.
+
+    "----------------------------------------------------------
+    " Z-fields
+    "----------------------------------------------------------
+    DATA: ls_integ_ecosys_sap TYPE bapi_te_wbs_element.
+
+    "Get solic name
+    SELECT SINGLE orgtx FROM t527x INTO @DATA(lv_orgtx_solic) WHERE orgeh = @ps_project-idgerenciasolicitante.
+    IF sy-subrc <> 0.
+    ENDIF.                                         "#EC EMPTY_IF_BRANCH
+
+    "Get resp name
+    SELECT SINGLE orgtx FROM t527x INTO @DATA(lv_orgtx_resp) WHERE orgeh = @ps_project-idgerenciasolicitante.
+    IF sy-subrc <> 0.
+    ENDIF.                                         "#EC EMPTY_IF_BRANCH
+
+    ls_integ_ecosys_sap-wbs_element     = ps_project-projectidsap.
+    ls_integ_ecosys_sap-zzpriorprj      = ps_project-idprioridade.
+    ls_integ_ecosys_sap-zz_program_l1   = ps_project-programa.
+    ls_integ_ecosys_sap-zz_strategy     = ps_project-estrateg.
+    ls_integ_ecosys_sap-zz_sub_strat    = ps_project-subestrateg.
+    ls_integ_ecosys_sap-zz_macro_prj    = ps_project-macroproj.
+    ls_integ_ecosys_sap-zz_process_l1   = ps_project-process.
+    ls_integ_ecosys_sap-zz_prod_serv    = ps_project-dscproduto.
+    ls_integ_ecosys_sap-zzcadeia_valor  = ps_project-fase.
+    ls_integ_ecosys_sap-zz_pais         = ps_project-pais.
+    ls_integ_ecosys_sap-zz_stat_1       = ps_project-estado.
+    ls_integ_ecosys_sap-zz_perc_stat_1  = '100'.
+    ls_integ_ecosys_sap-zz_solic_cod    = ps_project-idgerenciasolicitante.
+    ls_integ_ecosys_sap-zz_resp_cod     = ps_project-idgerenciaexecutante.
+    ls_integ_ecosys_sap-zzfundid        = ps_project-codigofundo.
+    ls_integ_ecosys_sap-zz_solic_name   = lv_orgtx_solic.
+    ls_integ_ecosys_sap-zz_resp_name    = lv_orgtx_resp.
+    "--- Export to memory (SHARED BUFFER) to program LCJ2054F04 (of bellow BAPI).
+    "EXPORT ls_integ_ecosys_sap = ls_integ_ecosys_sap TO MEMORY ID 'ZFIELDS_FROM_INTEGRATION_ECOSYS_SAP'.
+    CALL FUNCTION 'ZVLPS_ECOSYS_EXP_WBS_TOP'
+      EXPORTING
+        is_prps = ls_integ_ecosys_sap.
+
+    " clear buffer data
+    CALL FUNCTION 'BAPI_PS_INITIALIZATION'.
+
+    CALL FUNCTION 'BAPI_BUS2054_CHANGE_MULTI'
+      EXPORTING
+        i_project_definition  = CONV ps_pspid( ps_project-projectidsap )
+      TABLES
+        it_wbs_element        = lt_wbs
+        it_update_wbs_element = lt_wbs_upd
+        et_return             = lt_return.
+
+    " Error?
+    prepare_message(
+      EXPORTING
+        it_messages = lt_return
+      IMPORTING
+        ev_message  = p_ret_message
+        ev_status   = p_ret_status ).
+
+    IF p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDIF.
+
+    " Pre commit
+    FREE lt_return.
+    CALL FUNCTION 'BAPI_PS_PRECOMMIT'
+      TABLES
+        et_return = lt_return. "#EC CI_SEL_NESTED or "#EC CI_SROFC_NESTED
+
+    " Error?
+    prepare_message(
+      EXPORTING
+        it_messages = lt_return
+      IMPORTING
+        ev_message  = p_ret_message
+        ev_status   = p_ret_status ).
+
+    IF p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDIF.
+
+    "SUCCESS
+    CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+      EXPORTING
+        wait = 'X'.
+    p_ret_message = ''.
+    p_ret_status  = cc_success.
+
+  ENDMETHOD.

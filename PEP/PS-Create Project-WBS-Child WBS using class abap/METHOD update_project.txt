@@ -1,0 +1,76 @@
+  METHOD update_project.
+
+    DATA: ls_proj     TYPE bapi_bus2001_chg,
+          ls_proj_upd TYPE bapi_bus2001_upd,
+          lt_return   TYPE TABLE OF bapiret2.
+
+    CLEAR:
+        p_ret_status,
+        p_ret_message.
+
+    CALL FUNCTION 'BAPI_PS_INITIALIZATION'.
+
+    ls_proj-project_definition  = ps_project-projectidsap.
+    ls_proj-description         = ps_project-descricao.
+    "ls_proj-project_profile     = ps_project-idclassificacao.
+    ls_proj-plant               = ps_project-idcentro.
+    ls_proj-profit_ctr          = ps_project-idcentrolucro.
+    ls_proj-start               = ps_project-dtinicio.
+    ls_proj-finish              = ps_project-dtfim.
+    ls_proj-location            = ps_project-idlocalizacao.
+
+    ls_proj_upd-description     = abap_true.
+    "ls_proj_upd-project_profile = abap_true.
+    ls_proj_upd-plant           = abap_true.
+    ls_proj_upd-profit_ctr      = abap_true.
+    ls_proj_upd-start           = abap_true.
+    ls_proj_upd-finish          = abap_true.
+    ls_proj_upd-location        = abap_true.
+
+    CALL FUNCTION 'BAPI_BUS2001_CHANGE'
+      EXPORTING
+        i_project_definition     = ls_proj
+        i_project_definition_upd = ls_proj_upd
+      TABLES
+        et_return                = lt_return.
+
+    " Error?
+    prepare_message(
+      EXPORTING
+        it_messages = lt_return
+      IMPORTING
+        ev_message  = p_ret_message
+        ev_status   = p_ret_status ).
+
+    IF p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDIF.
+
+    "BAPI pre commit
+    FREE lt_return.
+    CALL FUNCTION 'BAPI_PS_PRECOMMIT'
+      TABLES
+        et_return = lt_return. "#EC CI_IMUD_NESTED
+
+    " Error?
+    prepare_message(
+      EXPORTING
+        it_messages = lt_return
+      IMPORTING
+        ev_message  = p_ret_message
+        ev_status   = p_ret_status ).
+
+    IF p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDIF.
+
+    "Success
+    CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+      EXPORTING
+        wait = 'X'.
+    p_ret_message = ''.
+    p_ret_status  = cc_success.
+
+  ENDMETHOD.

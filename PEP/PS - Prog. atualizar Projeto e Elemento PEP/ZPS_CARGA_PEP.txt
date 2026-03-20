@@ -1,0 +1,659 @@
+*&---------------------------------------------------------------------*
+*& Report ZPS_CARGA_PEP
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zps_carga_pep.
+
+SELECTION-SCREEN BEGIN OF BLOCK a WITH FRAME TITLE TEXT-t01.
+  PARAMETERS: p_cam TYPE rlgrap-filename OBLIGATORY.
+SELECTION-SCREEN END OF BLOCK a.
+
+TYPES: BEGIN OF ty_final,
+         nivel            TYPE string,
+         pep              TYPE string,
+         descricao        TYPE string,
+         centrocusto      TYPE string,
+         centrolucro      TYPE string,
+         resp             TYPE string,
+         responsavel      TYPE string,
+         empr             TYPE string,
+         mi               TYPE string,
+         ger_projeto      TYPE string,
+         negocio          TYPE string,
+         estruturainvest  TYPE string,
+         programainvest   TYPE string,
+         ano              TYPE string,
+         tipoprojeto      TYPE string,
+         centro_proj      TYPE string,
+         data_inicio_proj TYPE string,
+         perfil_proj      TYPE string,
+         contract_manage  TYPE string,
+         ggo              TYPE string,
+       END OF ty_final.
+
+TYPES : BEGIN OF ty_saida,
+          nivel            TYPE string,
+          pep              TYPE string,
+          descricao        TYPE string,
+          centrocusto      TYPE string,
+          centrolucro      TYPE string,
+          resp             TYPE string,
+          responsavel      TYPE string,
+          empr             TYPE string,
+          mi               TYPE string,
+          ger_projeto      TYPE string,
+          negocio          TYPE string,
+          estruturainvest  TYPE string,
+          programainvest   TYPE string,
+          ano              TYPE string,
+          tipoprojeto      TYPE string,
+          centro_proj      TYPE string,
+          data_inicio_proj TYPE string,
+          perfil_proj      TYPE string,
+          contract_manage  TYPE string,
+          ggo              TYPE string,
+          msg              TYPE char220,
+          status           TYPE char40,
+        END OF ty_Saida.
+
+DATA: t_raw     TYPE truxs_t_text_data,
+      t_final   TYPE STANDARD TABLE OF ty_final,
+      s_final   TYPE ty_final,
+      t_saida   TYPE STANDARD TABLE OF ty_saida,
+      s_saida   TYPE ty_saida,
+      t_lines   TYPE STANDARD TABLE OF tline,
+      s_lines   TYPE tline,
+      t_element TYPE STANDARD TABLE OF bapi_bus2054_new.
+
+*Tabelas p/ SHDB
+
+DATA : ti_bdc        LIKE bdcdata OCCURS 0 WITH HEADER LINE,
+       ti_bdcmsgcoll LIKE bdcmsgcoll OCCURS 0 WITH HEADER LINE.
+
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_cam.
+  PERFORM zf_abre_caminho.
+
+START-OF-SELECTION.
+  PERFORM: zf_le_arquivo,
+           zf_cria_projeto CHANGING s_saida-msg s_saida-status,
+           zf_carrega_texto,
+           zf_carrega_pos_inv CHANGING s_saida-msg s_saida-status,
+           zf_mostra_resultado.
+
+*&---------------------------------------------------------------------*
+*& Form ZF_LE_ARQUIVO
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM zf_le_arquivo .
+  DATA: lt_file TYPE STANDARD TABLE OF alsmex_tabline,
+        ls_file TYPE alsmex_tabline.
+  CONSTANTS :
+
+    c_begin_col TYPE i VALUE '1',
+    c_begin_row TYPE i VALUE '2',
+    c_end_col   TYPE i VALUE '38',
+    c_end_row   TYPE i VALUE '65535'.
+
+  CALL FUNCTION 'ALSM_EXCEL_TO_INTERNAL_TABLE'
+    EXPORTING
+      filename                = p_cam
+      i_begin_col             = c_begin_col
+      i_begin_row             = c_begin_row
+      i_end_col               = c_end_col
+      i_end_row               = c_end_row
+    TABLES
+      intern                  = lt_file
+    EXCEPTIONS
+      inconsistent_parameters = 1
+      upload_ole              = 2
+      OTHERS                  = 3.
+  IF sy-subrc <> 0.
+    MESSAGE e899(mm) WITH 'Erro ao converter arquivo.'.
+  ENDIF.
+
+  DATA(lt_file2) = lt_file[].
+  SORT lt_file BY row.
+  DELETE ADJACENT DUPLICATES FROM lt_file COMPARING row.
+
+  CALL FUNCTION 'SAPGUI_PROGRESS_INDICATOR'
+    EXPORTING
+      percentage = 0
+      text       = 'Carregando arquivo....'.
+
+  DATA(lv_lines) = lines( lt_file2 ).
+
+  LOOP AT lt_file ASSIGNING FIELD-SYMBOL(<lfs_file>).
+    CLEAR s_final.
+    LOOP AT lt_file2 ASSIGNING FIELD-SYMBOL(<lfs_file2>) WHERE row = <lfs_file>-row.
+
+      DATA(lv_lines_perc) = lv_lines / sy-tabix.
+
+      CALL FUNCTION 'SAPGUI_PROGRESS_INDICATOR'
+        EXPORTING
+          percentage = lv_lines_perc
+          text       = 'Carregando arquivo....'.
+
+      CASE <lfs_file2>-col.
+        WHEN '1'.
+          MOVE <lfs_file2>-value TO s_final-nivel .
+        WHEN '2'.
+          MOVE <lfs_file2>-value TO s_final-pep   .
+        WHEN '3'.
+          MOVE <lfs_file2>-value TO s_final-descricao    .
+        WHEN '4'.
+          MOVE <lfs_file2>-value TO s_final-centrocusto   .
+        WHEN '5'.
+          MOVE <lfs_file2>-value TO s_final-centrolucro    .
+        WHEN '6'.
+          MOVE <lfs_file2>-value TO s_final-resp    .
+        WHEN '7'.
+          MOVE <lfs_file2>-value TO s_final-responsavel    .
+        WHEN '8'.
+          MOVE <lfs_file2>-value TO s_final-empr    .
+        WHEN '9'.
+          MOVE <lfs_file2>-value TO s_final-mi    .
+        WHEN '10'.
+          MOVE <lfs_file2>-value TO s_final-ger_projeto    .
+        WHEN '11'.
+          MOVE <lfs_file2>-value TO s_final-negocio    .
+        WHEN '12'.
+          MOVE <lfs_file2>-value TO s_final-estruturainvest    .
+        WHEN '13'.
+          MOVE <lfs_file2>-value TO s_final-programainvest    .
+        WHEN '14'.
+          MOVE <lfs_file2>-value TO s_final-ano    .
+        WHEN '15'.
+          MOVE <lfs_file2>-value TO s_final-tipoprojeto    .
+        WHEN '16'.
+          MOVE <lfs_file2>-value TO s_final-centro_proj    .
+        WHEN '17'.
+          MOVE <lfs_file2>-value TO s_final-data_inicio_proj    .
+        WHEN '18'.
+          MOVE <lfs_file2>-value TO s_final-perfil_proj    .
+        WHEN '19'.
+          MOVE <lfs_file2>-value TO s_final-contract_manage    .
+        WHEN '20'.
+          MOVE <lfs_file2>-value TO s_final-ggo    .
+
+
+      ENDCASE.
+    ENDLOOP.
+    APPEND s_final TO t_final.
+  ENDLOOP.
+
+  SORT t_final BY pep.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ZF_ABRE_CAMINHO
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM zf_abre_caminho .
+  CALL FUNCTION 'WS_FILENAME_GET'
+    EXPORTING
+*     DEF_FILENAME     = ' '
+      def_path         = 'C:\'
+      mask             = ',*.xls.'
+      mode             = 'O'
+      title            = 'Selecionar arquivo para importa  o'
+    IMPORTING
+      filename         = p_cam
+*     RC               =
+    EXCEPTIONS
+      inv_winsys       = 1
+      no_batch         = 2
+      selection_cancel = 3
+      selection_error  = 4
+      OTHERS           = 5.
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ZF_CARREGA_TEXTO
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM zf_carrega_texto .
+  DATA: ls_header      TYPE thead,
+        lv_msg         TYPE string,
+        lv_tdid        TYPE string,
+        s_element      TYPE bapi_bus2054_new,
+        lv_estinvest   TYPE string,
+        lv_proginvest  TYPE string,
+        lv_ano         TYPE string,
+        lv_tipoprojeto TYPE string,
+        lv_pep         TYPE ps_posid.
+
+  CALL FUNCTION 'SAPGUI_PROGRESS_INDICATOR'
+    EXPORTING
+      percentage = 0
+      text       = 'Carregando elementos....'.
+
+
+
+  DATA(t_final2) =   t_final[].
+
+  DELETE t_final2 WHERE nivel = 0.
+
+  DATA(lv_lines) = lines( t_final2 ).
+
+  LOOP AT t_final2 ASSIGNING FIELD-SYMBOL(<lfs_final>).
+    CLEAR: s_saida, s_element, t_element[].
+
+    DATA(lv_lines_perc) = lv_lines / sy-tabix.
+
+    CALL FUNCTION 'SAPGUI_PROGRESS_INDICATOR'
+      EXPORTING
+        percentage = lv_lines_perc
+        text       = 'Carregando elementos....'.
+
+    CALL FUNCTION 'CONVERSION_EXIT_ABPSN_INPUT'
+      EXPORTING
+        input  = <lfs_final>-pep
+      IMPORTING
+        output = lv_pep.
+
+    SELECT *
+      FROM prps
+      INTO TABLE @DATA(it_prps)
+      WHERE posid = @lv_pep.
+
+    IF sy-subrc IS NOT INITIAL.
+
+      s_element-wbs_element = <lfs_final>-pep.
+      s_element-description = <lfs_final>-descricao.
+      s_element-responsible_no = <lfs_final>-responsavel    .
+      s_element-company_code = <lfs_final>-empr    .
+      s_element-profit_ctr = <lfs_final>-centrolucro    .
+      s_element-proj_type = <lfs_final>-tipoprojeto.
+      s_element-respsbl_cctr = <lfs_final>-centrocusto   .
+      s_element-user_field_char20_1 = <lfs_final>-ger_projeto.
+      s_element-user_field_char20_2 = <lfs_final>-negocio.
+      s_element-user_field_char10_1 = <lfs_final>-contract_manage.
+      s_element-user_field_char10_2 = <lfs_final>-ggo.
+      s_element-inv_reason  = <lfs_final>-mi    .
+
+      CALL FUNCTION 'BAPI_PS_INITIALIZATION'.
+
+      CASE <lfs_final>-nivel.
+        WHEN '1'.
+          MOVE space TO s_element-wbs_up.
+        WHEN '2'.
+          MOVE <lfs_final>-pep(9) TO s_element-wbs_up.
+        WHEN '3'.
+          MOVE <lfs_final>-pep(12) TO s_element-wbs_up.
+        WHEN '4'.
+          MOVE <lfs_final>-pep(15) TO s_element-wbs_up.
+        WHEN '5'.
+          MOVE <lfs_final>-pep(18) TO s_element-wbs_up.
+        WHEN '6'.
+          MOVE <lfs_final>-pep(21) TO s_element-wbs_up.
+      ENDCASE.
+
+      APPEND s_element TO t_element.
+
+      PERFORM zf_create_pep USING <lfs_final>-pep t_element
+                         CHANGING s_saida-msg s_saida-status.
+
+      MOVE-CORRESPONDING <lfs_final> TO s_saida.
+
+      APPEND s_saida TO t_saida.
+
+    ELSE.
+
+      s_saida-msg = 'PEP j  existente!'.
+      s_saida-status = icon_yellow_light.
+
+     APPEND s_saida TO t_saida.
+
+    ENDIF.
+
+  ENDLOOP.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ZF_MOSTRA_RESULTADO
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM zf_mostra_resultado .
+  DATA: go_alv     TYPE REF TO cl_salv_table,
+        lr_funct   TYPE REF TO cl_salv_functions,
+        lr_columns TYPE REF TO cl_salv_columns_table,
+        lr_column  TYPE REF TO cl_salv_column_table.
+
+  cl_salv_table=>factory( IMPORTING r_salv_table = go_alv CHANGING t_table = t_saida ).
+
+  lr_columns ?= go_alv->get_columns( ).
+
+  lr_column ?= lr_columns->get_column( 'STATUS' ).
+  lr_column->set_icon( if_salv_c_bool_sap=>true ).
+
+  lr_funct = go_alv->get_functions( ).
+  lr_funct->set_all( if_salv_c_bool_sap=>true ).
+
+  go_alv->display( ).
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form zf_create_pep
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM zf_create_pep USING p_projdef
+                         p_element LIKE t_element
+                  CHANGING p_msg p_status.
+
+  DATA: lt_return     TYPE STANDARD TABLE OF bapiret2,
+        lv_projectdef TYPE bapi_bus2001_new-project_definition.
+
+  lv_projectdef = p_projdef(7).
+
+  CALL FUNCTION 'BAPI_BUS2054_CREATE_MULTI'
+    EXPORTING
+      i_project_definition = lv_projectdef
+    TABLES
+      it_wbs_element       = p_element
+      et_return            = lt_return
+    EXCEPTIONS
+      error_message        = 1
+      OTHERS               = 2.
+  IF sy-subrc <> 0.
+    MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+            WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4
+            INTO p_msg.
+    MOVE: icon_red_light TO p_status.
+
+    CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+
+    RETURN.
+
+
+  ELSE.
+
+    CALL FUNCTION 'BAPI_PS_PRECOMMIT'
+      TABLES
+        et_return = lt_return.
+
+    READ TABLE lt_return TRANSPORTING NO FIELDS
+      WITH KEY type = 'E'.
+
+    IF sy-subrc IS INITIAL.
+      p_msg = 'Erro ao realizar precommit'.
+      MOVE icon_red_light TO p_status.
+      RETURN.
+    ELSE.
+      CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+        EXPORTING
+          wait = abap_true.
+      MOVE: 'Atualizado com sucesso' TO p_msg,
+            icon_green_light         TO p_status.
+    ENDIF.
+
+  ENDIF.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form zf_cria_projeto
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM zf_cria_projeto CHANGING p_msg p_status .
+
+  DATA: ls_stru     TYPE bapi_project_definition,
+        lt_ret_proj TYPE bapireturn1,
+        ls_ret_1    TYPE bapireturn1,
+        lv_proj     TYPE ps_pspid,
+        lv_int      TYPE ps_intnr.
+
+
+  CALL FUNCTION 'SAPGUI_PROGRESS_INDICATOR'
+    EXPORTING
+      percentage = 0
+      text       = 'Criando projetos....'.
+
+  DATA(t_final_copy) = t_final[].
+
+  DELETE t_final_copy WHERE nivel <> 0.
+
+
+  DATA(lv_lines) = lines( t_final_copy ).
+
+  LOOP AT t_final_copy ASSIGNING FIELD-SYMBOL(<lfs_final_cp>).
+
+    CLEAR: lt_ret_proj, ls_stru, ls_ret_1.
+
+    DATA(lv_lines_perc) = lv_lines / sy-tabix.
+
+
+    CALL FUNCTION 'SAPGUI_PROGRESS_INDICATOR'
+      EXPORTING
+        percentage = lv_lines_perc
+        text       = 'Verificando se o projeto existe....'.
+
+    CALL FUNCTION 'CONVERSION_EXIT_ABPSN_INPUT'
+      EXPORTING
+        input  = <lfs_final_cp>-pep
+      IMPORTING
+        output = lv_proj.
+
+    lv_int = lv_proj.
+
+    CALL FUNCTION 'BAPI_PROJECTDEF_GETDETAIL'
+      EXPORTING
+        currentexternalproje = lv_proj
+        currentinternalproje = lv_int
+      IMPORTING
+*       PROJECT_DEFINITION_STRU       =
+        return               = ls_ret_1.
+
+    IF ls_ret_1-type = ' '.
+
+      MOVE: 'Projeto j  existente.' TO p_msg,
+            icon_green_light         TO p_status.
+      MOVE-CORRESPONDING <lfs_final_cp> TO s_saida.
+      APPEND s_saida TO t_saida.
+
+      CONTINUE.
+    ENDIF.
+
+    ls_stru-project_definition = <lfs_final_cp>-pep.
+    ls_stru-description = <lfs_final_cp>-descricao.
+    ls_stru-profit_ctr = <lfs_final_cp>-centrolucro.
+    ls_stru-project_profile = <lfs_final_cp>-perfil_proj.
+    ls_stru-plant = <lfs_final_cp>-centro_proj.
+    CONCATENATE <lfs_final_cp>-data_inicio_proj+6(4) <lfs_final_cp>-data_inicio_proj+3(2) <lfs_final_cp>-data_inicio_proj(2) INTO DATA(lv_data).
+    ls_stru-start = lv_data.
+
+
+    CALL FUNCTION 'BAPI_PROJECTDEF_CREATE'
+      EXPORTING
+        project_definition_stru = ls_stru
+      IMPORTING
+        return                  = lt_ret_proj.
+*     TABLES
+*       E_MESSAGE_TABLE         =
+    .
+
+    IF lt_ret_proj-type = 'E'.
+      p_msg = 'Erro ao criar projeto'.
+      MOVE icon_red_light TO p_status.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+
+    ELSE.
+      CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+        EXPORTING
+          wait = abap_true.
+
+      MOVE: 'Projeto criado com sucesso.' TO p_msg,
+            icon_green_light         TO p_status.
+    ENDIF.
+
+    MOVE-CORRESPONDING <lfs_final_cp> TO s_saida.
+
+    APPEND s_saida TO t_saida.
+
+  ENDLOOP.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form zf_carrega_pos_inv
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*&      <-- S_SAIDA_MSG
+*&---------------------------------------------------------------------*
+FORM zf_carrega_pos_inv  CHANGING p_msg p_status.
+
+  DATA: p_mode LIKE sy-binpt VALUE 'N'.
+
+  TYPES: BEGIN OF ty_posid,
+           posid TYPE prps-posid,
+         END OF ty_posid.
+
+  DATA: lv_pep  TYPE ps_posid,
+        it_prps TYPE STANDARD TABLE OF ty_posid WITH HEADER LINE,
+        ls_prps TYPE ty_posid.
+
+  DATA(t_final3) =   t_final[].
+
+  DELETE t_final3 WHERE nivel <> 1.
+
+  DATA(lv_lines) = lines( t_final3 ).
+
+  LOOP AT t_final3 ASSIGNING FIELD-SYMBOL(<lfs_final4>).
+
+    CALL FUNCTION 'CONVERSION_EXIT_ABPSN_INPUT'
+      EXPORTING
+        input  = <lfs_final4>-pep
+      IMPORTING
+        output = lv_pep.
+
+    ls_prps = lv_pep.
+    APPEND ls_prps TO it_prps.
+
+  ENDLOOP.
+
+  SELECT posid
+    INTO TABLE @DATA(lt_posid)
+    FROM prps
+    FOR ALL ENTRIES IN @it_prps
+    WHERE posid = @it_prps-posid.
+
+  LOOP AT t_final3 ASSIGNING FIELD-SYMBOL(<lfs_final3>).
+
+    CALL FUNCTION 'CONVERSION_EXIT_ABPSN_INPUT'
+      EXPORTING
+        input  = <lfs_final3>-pep
+      IMPORTING
+        output = lv_pep.
+
+    READ TABLE lt_posid ASSIGNING FIELD-SYMBOL(<fs_posid>) WITH KEY posid = lv_pep.
+
+    CLEAR ti_bdc[].
+
+    IF sy-subrc IS INITIAL.
+
+      PERFORM append_bdcdata USING:
+
+          'X'   'SAPLCJWB'          '0100',
+          ' '   'BDC_CURSOR'        '*PRPS-POSID',
+          ' '   'BDC_OKCODE'        '=LETB',
+       	  ' '   '*PROJ-PSPID'       ' ',
+          ' '   '*PRPS-POSID'       <lfs_final3>-pep .
+
+      PERFORM append_bdcdata USING:
+
+          'X'   'SAPLCJWB'            '0901',
+          ' '   'BDC_OKCODE'          '=AIPP',
+          ' '   'BDC_SUBSCR'          'SAPLCJWB                                0902LISTE',
+          ' '   'BDC_CURSOR'          'RCWBS-IDENT(01)',
+          ' '   'RCJ_MARKL-MARK(01)'  'X',
+          ' '   'BDC_SUBSCR'          'SAPLCJWB                                3993BUTTONS'.
+
+      PERFORM append_bdcdata USING:
+
+        'X'    'SAPLAIPP'           '0050',
+        ' '    'BDC_CURSOR'         'RAIP1-POSID',
+        ' '    'BDC_OKCODE'         '=TAKE',
+        ' '    'RAIP1-PRNAM'        <lfs_final3>-programainvest,
+        ' '     'RAIP1-POSID'       <lfs_final3>-estruturainvest,
+        ' '    'RAIP1-GJAHR'        <lfs_final3>-ano.
+
+      PERFORM append_bdcdata USING:
+
+        'X'    'SAPLCJWB'     '0901',
+        ' '    'BDC_OKCODE'   '=BU',
+        ' '    'BDC_SUBSCR'   'SAPLCJWB                                0902LISTE',
+        ' '    'BDC_CURSOR'   'RCWBS-IDENT(01)',
+        ' '    'BDC_SUBSCR'   'SAPLCJWB                                3993BUTTONS'.
+
+
+      CALL TRANSACTION 'CJ02' USING ti_bdc
+                                MODE p_mode
+                                UPDATE 'S'
+                                MESSAGES INTO ti_bdcmsgcoll.
+
+      READ TABLE ti_bdcmsgcoll WITH KEY msgtyp = 'E' TRANSPORTING NO FIELDS.
+
+      IF sy-subrc IS INITIAL.
+        p_msg = 'Erro ao incluir posi  o de investimento'.
+        MOVE icon_red_light TO p_status.
+
+      ELSE.
+        MOVE: 'Posi  o de investimento inclu da com sucesso.' TO p_msg,
+              icon_green_light         TO p_status.
+      ENDIF.
+
+      MOVE-CORRESPONDING <lfs_final3> TO s_saida.
+      APPEND s_saida TO t_saida.
+
+    ELSE.
+      CONTINUE.
+    ENDIF.
+
+  ENDLOOP.
+
+
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*&      Form  append_bdcdata
+*&---------------------------------------------------------------------*
+FORM append_bdcdata USING dynbegin name value.
+
+  CLEAR ti_bdc.
+
+  IF dynbegin EQ 'X'.
+    MOVE name  TO ti_bdc-program.
+    MOVE value TO ti_bdc-dynpro.
+    MOVE 'X'   TO ti_bdc-dynbegin.
+  ELSE.
+    MOVE name  TO ti_bdc-fnam.
+    MOVE value TO ti_bdc-fval.
+  ENDIF.
+  APPEND ti_bdc.
+
+ENDFORM. " append_bdcdata

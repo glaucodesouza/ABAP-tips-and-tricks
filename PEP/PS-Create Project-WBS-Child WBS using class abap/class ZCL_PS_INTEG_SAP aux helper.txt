@@ -1,0 +1,1833 @@
+class ZCL_VLPS_INTEG_SAP_ECOSYS definition
+  public
+  final
+  create public .
+
+public section.
+
+  types:
+    TT_ZVLTPS_ECOSY_PRJ type STANDARD TABLE OF ZVLTPS_ECOSY_PRJ .
+  types:
+    TT_ZVLTPS_ECOSY_PRJ_hash type hashed TABLE OF ZVLTPS_ECOSY_PRJ
+                                 WITH UNIQUE KEY proj_ppm proj_fase .
+  types:
+    tt_projectid_range TYPE RANGE OF zvltps_ecosy_prj-proj_ppm .
+  types:
+    tt_proj_fase_range TYPE RANGE OF zvltps_ecosy_prj-proj_fase .
+  types:
+    tt_proj_sap_range TYPE RANGE OF zvltps_ecosy_prj-proj_sap .
+  types:
+    tt_elemento_pep_range TYPE RANGE OF zvltps_ecosy_prj-elemento_pep .
+  types:
+    tt_tomanterprojeto TYPE STANDARD TABLE OF zcl_zovps_ppm_dmestres_mpc=>ts_manterprojetos .
+
+  constants CC_SUCCESS type STRING value 'S' ##NO_TEXT.
+  constants CC_ERROR type STRING value 'E' ##NO_TEXT.
+
+  class-methods GET_PROJ_INITIAL_CHARACTER
+    importing
+      !P_IDCLASSIFICACAO type STRING
+    returning
+      value(P_CHARACTER) type CHAR1 .
+  class-methods CREATE_PROJECT
+    importing
+      !PS_PROJECT type ZCL_ZOVPS_PPM_DMESTRES_MPC=>TS_MANTERPROJETOS
+    exporting
+      !P_RET_STATUS type STRING
+      !P_RET_MESSAGE type STRING
+      !P_RET_PROJECT type STRING .
+  class-methods CREATE_PEP_TOPO
+    importing
+      !PS_PROJECT type ZCL_ZOVPS_PPM_DMESTRES_MPC=>TS_MANTERPROJETOS
+    exporting
+      !P_RET_STATUS type STRING
+      !P_RET_MESSAGE type STRING
+      !P_ELEMENTO_PEP type ZVLTPS_ECOSY_PRJ-ELEMENTO_PEP .
+  class-methods CREATE_PEP
+    importing
+      !PS_PEP type ZCL_ZOVPS_PPM_DMESTRES_MPC=>TS_MANTERPEPS
+    exporting
+      !P_RET_STATUS type STRING
+      !P_RET_MESSAGE type STRING .
+  class-methods UPDATE_PROJECT
+    importing
+      !PS_PROJECT type ZCL_ZOVPS_PPM_DMESTRES_MPC=>TS_MANTERPROJETOS
+    exporting
+      !P_RET_STATUS type STRING
+      !P_RET_MESSAGE type STRING .
+  class-methods UPDATE_PEP_TOPO
+    importing
+      !PS_PROJECT type ZCL_ZOVPS_PPM_DMESTRES_MPC=>TS_MANTERPROJETOS
+    exporting
+      !P_RET_STATUS type STRING
+      !P_RET_MESSAGE type STRING .
+  class-methods UPDATE_PEP
+    importing
+      !PS_PEP type ZCL_ZOVPS_PPM_DMESTRES_MPC=>TS_MANTERPEPS
+    exporting
+      !P_RET_STATUS type STRING
+      !P_RET_MESSAGE type STRING .
+  class-methods READ_OBJNR_PROJECT
+    importing
+      !P_PROJECT type STRING
+    returning
+      value(P_OBJNR) type STRING .
+  class-methods GET_NEW_SEQ_PROJ
+    importing
+      !P_IDCLASSIFICACAO type STRING
+    returning
+      value(P_NEW_PROJ) type STRING .
+  class-methods INSERT_ZTABPROJ
+    importing
+      !P_PROJ_PPM type ZVLTPS_ECOSY_PRJ-PROJ_PPM
+      !P_PROJ_FASE type ZVLTPS_ECOSY_PRJ-PROJ_FASE
+      !P_PROJ_SAP type ZVLTPS_ECOSY_PRJ-PROJ_SAP
+      !P_ELEMENTO_PEP type ZVLTPS_ECOSY_PRJ-ELEMENTO_PEP
+      !P_STATUS type ZVLTPS_ECOSY_PRJ-STATUS
+      !P_MENSAGEM type ZVLTPS_ECOSY_PRJ-MENSAGEM
+    returning
+      value(P_RET_STATUS) type STRING .
+  class-methods INSERT_ZTABPROJ_PEP_CHILD
+    importing
+      !P_PROJ_PPM type ZVLTPS_ECOSY_PRJ-PROJ_PPM
+      !P_PROJ_FASE type ZVLTPS_ECOSY_PRJ-PROJ_FASE
+      !P_PROJ_SAP type ZVLTPS_ECOSY_PRJ-PROJ_SAP
+      !P_ELEMENTO_PEP type ZVLTPS_ECOSY_PRJ-ELEMENTO_PEP
+      !P_STATUS type ZVLTPS_ECOSY_PRJ-STATUS
+      !P_MENSAGEM type ZVLTPS_ECOSY_PRJ-MENSAGEM
+    returning
+      value(P_RET_STATUS) type STRING .
+  class-methods UPDATE_ZTABPROJ
+    importing
+      !PS_PROJECT type ZVLTPS_ECOSY_PRJ
+      !P_STATUS type ZVLTPS_ECOSY_PRJ-STATUS
+      !P_MENSAGEM type ZVLTPS_ECOSY_PRJ-MENSAGEM
+    returning
+      value(P_RET_STATUS) type STRING .
+  class-methods UPDATE_ZTABPROJ_FOR_PEP_TOPO
+    importing
+      !P_PROJ_PPM type ZVLTPS_ECOSY_PRJ-PROJ_PPM
+      !P_PROJ_FASE type ZVLTPS_ECOSY_PRJ-PROJ_FASE
+      !P_PROJ_SAP type ZVLTPS_ECOSY_PRJ-PROJ_SAP
+      !P_ELEMENTO_PEP type ZVLTPS_ECOSY_PRJ-ELEMENTO_PEP
+      !P_STATUS type ZVLTPS_ECOSY_PRJ-STATUS
+      !P_MENSAGEM type ZVLTPS_ECOSY_PRJ-MENSAGEM
+    returning
+      value(P_RET_OK) type STRING .
+  class-methods UPDATE_ZTABPROJ_FOR_PEP_CHILD
+    importing
+      !PS_PROJECT type ZVLTPS_ECOSY_PRJ
+      !P_STATUS type ZVLTPS_ECOSY_PRJ-STATUS
+      !P_MENSAGEM type ZVLTPS_ECOSY_PRJ-MENSAGEM
+    returning
+      value(P_RET_STATUS) type STRING .
+  class-methods PACK_INTO_BAPIPAREX
+    importing
+      !IV_STRUCT_NAME type BAPIPAREX-STRUCTURE
+      !IS_DATA type ANY
+    returning
+      value(CS_EXT) type BAPIPAREX .
+  class-methods CHECK_CREATE_PROJECT
+    importing
+      !IV_ACTCREATEPROJPEPTOPO type STRING
+    returning
+      value(RV_CREATE) type SAP_BOOL .
+  class-methods CHECK_UPDATE_PROJ
+    importing
+      !IV_ACTUPDATEPROJ type STRING
+    returning
+      value(RV_CREATE) type SAP_BOOL .
+  class-methods CHECK_UPDATE_PEP_TOP
+    importing
+      !IV_ACTUPDATEPEPTOPO type STRING
+    returning
+      value(RV_CREATE) type SAP_BOOL .
+  class-methods CHECK_CREATE_PEP_FILHO
+    importing
+      !IV_PEP_CHILD type STRING
+    returning
+      value(RV_CREATE) type SAP_BOOL .
+  class-methods CHECK_CREATE_PEP_FILHO_BAPI
+    importing
+      !PS_ZTAB_CTRL type ZVLTPS_ECOSY_PRJ
+    returning
+      value(P_CREATE) type SAP_BOOL .
+  class-methods FORMAT_DATE_OUT
+    importing
+      !P_DATE type STRING
+    returning
+      value(P_FORMMATED_DATE) type STRING .
+  class-methods READ_ZPROJ_BY_RANGE
+    importing
+      !IR_PROJ_PPM type TT_PROJECTID_RANGE
+      !IR_PROJ_FASE type TT_PROJ_FASE_RANGE
+      !IR_PROJ_SAP type TT_PROJ_SAP_RANGE optional
+    returning
+      value(ET_ZPROJECTS) type ZVLTTPS_ECOSY_PRJ .
+  class-methods READ_ZPROJS_BY_TOMANTERPROJETO
+    importing
+      !IT_TOMANTERPROJETO type TT_TOMANTERPROJETO
+    returning
+      value(ET_ZPROJECTS) type ZVLTTPS_ECOSY_PRJ .
+  class-methods READ_ZPEP_BY_RANGE
+    importing
+      !IR_PROJ_PPM type TT_PROJECTID_RANGE
+      !IR_PROJ_FASE type TT_PROJ_FASE_RANGE
+      !IR_PROJ_SAP type TT_PROJ_SAP_RANGE
+      !IR_ELEMENTO_PEP type TT_ELEMENTO_PEP_RANGE
+    returning
+      value(ET_ZPROJECTS) type ZVLTTPS_ECOSY_PRJ .
+  class-methods PREPARE_MESSAGE
+    importing
+      !IT_MESSAGES type TT_RETURN
+    exporting
+      !EV_MESSAGE type STRING
+      !EV_STATUS type STRING .
+  class-methods SELECT_OBJNR_FROM_PSPID
+    importing
+      !IV_PSPID type PS_PSPID
+    returning
+      value(RT_OBJNR) type STRING .
+  class-methods PREPARE_PROJ_RANGES
+    importing
+      !IT_PROJECTS type TT_TOMANTERPROJETO
+    exporting
+      !ET_PROJ_PPM_RANGE type TT_PROJECTID_RANGE
+      !ET_PROJ_FASE_RANGE type TT_PROJ_FASE_RANGE
+      !ET_PROJ_SAP_RANGE type TT_PROJ_SAP_RANGE .
+protected section.
+private section.
+ENDCLASS.
+
+
+
+CLASS ZCL_VLPS_INTEG_SAP_ECOSYS IMPLEMENTATION.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>CHECK_CREATE_PEP_FILHO
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IV_PEP_CHILD                   TYPE        STRING
+* | [<-()] RV_CREATE                      TYPE        SAP_BOOL
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD check_create_pep_filho.
+
+    CLEAR rv_create.
+
+    IF IV_PEP_CHILD CP '*.*' OR
+       IV_PEP_CHILD CP '*-*'.
+      "PEP contains . or - and it is considerated PEP child=OK.
+      rv_create = abap_true.
+    ELSE.
+      "PEP does not contain . or -. It is not a pep child=NOK
+      rv_create = abap_false.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>CHECK_CREATE_PEP_FILHO_BAPI
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] PS_ZTAB_CTRL                   TYPE        ZVLTPS_ECOSY_PRJ
+* | [<-()] P_CREATE                       TYPE        SAP_BOOL
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD CHECK_CREATE_PEP_FILHO_BAPI.
+
+    CLEAR p_create.
+
+    IF ( ps_ztab_ctrl-proj_sap <> '' AND ps_ztab_ctrl-elemento_pep = '' ) OR
+       ( ps_ztab_ctrl-proj_sap <> '' AND ps_ztab_ctrl-elemento_pep <> '' and ps_ztab_ctrl-status = cc_error ) .
+      p_create = abap_true.
+    ELSE.
+      p_create = abap_false.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>CHECK_CREATE_PROJECT
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IV_ACTCREATEPROJPEPTOPO        TYPE        STRING
+* | [<-()] RV_CREATE                      TYPE        SAP_BOOL
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD check_create_project.
+
+    CLEAR rv_create.
+
+    IF iv_actcreateprojpeptopo IS NOT INITIAL.
+      rv_create = abap_true.
+    ELSE.
+      rv_create = abap_false.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>CHECK_UPDATE_PEP_TOP
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IV_ACTUPDATEPEPTOPO            TYPE        STRING
+* | [<-()] RV_CREATE                      TYPE        SAP_BOOL
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD CHECK_UPDATE_PEP_TOP.
+
+    CLEAR rv_create.
+
+    "Action Update Pep Topo (WBS top)?
+    IF iv_ActUpdatePepTopo = abap_true.
+      rv_create = abap_true.
+    ELSE.
+      rv_create = abap_false.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>CHECK_UPDATE_PROJ
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IV_ACTUPDATEPROJ               TYPE        STRING
+* | [<-()] RV_CREATE                      TYPE        SAP_BOOL
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD CHECK_UPDATE_PROJ.
+
+    CLEAR rv_create.
+
+    "Action Update Project?
+    IF iv_ActUpdateProj = abap_true.
+      rv_create = abap_true.
+    ELSE.
+      rv_create = abap_false.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>CREATE_PEP
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] PS_PEP                         TYPE        ZCL_ZOVPS_PPM_DMESTRES_MPC=>TS_MANTERPEPS
+* | [<---] P_RET_STATUS                   TYPE        STRING
+* | [<---] P_RET_MESSAGE                  TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD create_pep.
+
+    " IMPORTANT:
+    " Here is created Child WBS-structure (child PEP)
+
+    CLEAR:
+      p_ret_status,
+      p_ret_message.
+      "p_chave_sap.
+
+    DATA: lt_wbs_new       TYPE TABLE OF bapi_bus2054_new,
+          ls_wbs_new       TYPE bapi_bus2054_new,
+          lt_return        TYPE TABLE OF bapiret2,
+          lt_precommit_ret TYPE TABLE OF bapiret2.
+
+    "----------------------------------------------------------
+    " Standard fields
+    "----------------------------------------------------------
+    ls_wbs_new-wbs_element                    = ps_pep-elementopep.
+    ls_wbs_new-description                    = ps_pep-descricao.
+    ls_wbs_new-proj_type                      = ps_pep-idtipoprojeto.
+    ls_wbs_new-priority                       = ps_pep-idprioridade.
+    ls_wbs_new-respsbl_cctr                   = ps_pep-ccresponsavel.
+    ls_wbs_new-request_cctr                   = ps_pep-ccsolicitante.
+    ls_wbs_new-wbs_planning_element           = ps_pep-elemplanejamento. "flag
+    ls_wbs_new-wbs_account_assignment_element = ps_pep-elemclassifcont. "flag
+    ls_wbs_new-location                       = ps_pep-idlocalizacao.
+    ls_wbs_new-wbs_basic_start_date           = ps_pep-dtinicio.
+    ls_wbs_new-wbs_basic_finish_date          = ps_pep-dtfim.
+    ls_wbs_new-wbs_up                         = ps_pep-elementopep(7).
+    APPEND ls_wbs_new TO lt_wbs_new.
+
+    "----------------------------------------------------------
+    " Z-fields
+    "----------------------------------------------------------
+    DATA: ls_integ_ecosys_sap TYPE bapi_te_wbs_element.
+    ls_integ_ecosys_sap-wbs_element     = ps_pep-projectidsap.
+    ls_integ_ecosys_sap-zz_liq_pep      = ps_pep-tipoliquidacaopep.
+    ls_integ_ecosys_sap-zz_bene_fisc    = ps_pep-beneficiofiscal.
+    ls_integ_ecosys_sap-zz_estrategia   = ps_pep-estrategiadispendio.
+    ls_integ_ecosys_sap-zz_sub_strat    = ps_pep-subestrategiadiependio.
+
+    "--- Export Z-fields to memory (SHARED BUFFER) to program LCJ2054F04 (inside this BAPI).
+    "EXPORT ls_integ_ecosys_sap = ls_integ_ecosys_sap TO MEMORY ID 'ZFIELDS_PEP_FROM_INTE_ECOSYS_SAP'.
+    CALL FUNCTION 'ZVLPS_ECOSYS_EXP_WBS_CHILD'
+      EXPORTING
+        is_prps       = ls_integ_ecosys_sap.
+
+    " clear buffer data
+    CALL FUNCTION 'BAPI_PS_INITIALIZATION'.
+
+    "--- Call the CREATE_MULTI BAPI -------------------------------------------
+    CALL FUNCTION 'BAPI_BUS2054_CREATE_MULTI'
+      EXPORTING
+        i_project_definition = CONV ps_pspid( ps_pep-projectidsap )
+      TABLES
+        it_wbs_element       = lt_wbs_new
+        et_return            = lt_return.
+
+    " Error?
+    prepare_message(
+      EXPORTING
+        it_messages = lt_return
+      IMPORTING
+        ev_message  = p_ret_message
+        ev_status   = p_ret_status ).
+
+    IF p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDIF.
+
+    " Pre commit
+    FREE lt_return.
+    CALL FUNCTION 'BAPI_PS_PRECOMMIT'
+      TABLES
+        et_return = lt_return. "#EC CI_SEL_NESTED or "#EC CI_SROFC_NESTED
+
+    " Error?
+    prepare_message(
+      EXPORTING
+        it_messages = lt_return
+      IMPORTING
+        ev_message  = p_ret_message
+        ev_status   = p_ret_status ).
+
+    IF p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDIF.
+
+    " Success
+    IF p_ret_message IS INITIAL.
+      p_ret_status  = cc_success.
+      CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+        EXPORTING
+          wait = abap_true.
+
+      "get CHAVE_SAP of new pep (objnr)
+      " no more needed here...
+*      SELECT SINGLE objnr
+*        FROM proj
+*       WHERE pspid = @ps_pep-elementopep
+*        INTO @DATA(lv_objnr).
+*      IF sy-subrc = 0.
+*        p_chave_sap = lv_objnr.
+*      ENDIF.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>CREATE_PEP_TOPO
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] PS_PROJECT                     TYPE        ZCL_ZOVPS_PPM_DMESTRES_MPC=>TS_MANTERPROJETOS
+* | [<---] P_RET_STATUS                   TYPE        STRING
+* | [<---] P_RET_MESSAGE                  TYPE        STRING
+* | [<---] P_ELEMENTO_PEP                 TYPE        ZVLTPS_ECOSY_PRJ-ELEMENTO_PEP
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD create_pep_topo.
+
+    "----------------------------------------------------------
+    " Create PEP TOPO (Wbs top)
+    "----------------------------------------------------------
+
+    CLEAR:
+      p_ret_status,
+      p_ret_message,
+      p_elemento_pep.
+    "p_chave_sap.
+
+    DATA: lt_wbs_new       TYPE TABLE OF bapi_bus2054_new,
+          ls_wbs_new       TYPE bapi_bus2054_new,
+          lt_extin         TYPE TABLE OF bapiparex,
+          ls_ext           TYPE bapiparex,
+          lt_return        TYPE TABLE OF bapiret2,
+          lt_precommit_ret TYPE TABLE OF bapiret2.
+
+    "----------------------------------------------------------
+    " Standard fields
+    "----------------------------------------------------------
+    ls_wbs_new-wbs_element               = ps_project-projectidsap.
+    ls_wbs_new-description               = ps_project-descricao.
+    ls_wbs_new-proj_type                 = ps_project-idtipoprojeto.
+    ls_wbs_new-priority                  = ps_project-idprioridade.
+    ls_wbs_new-profit_ctr                = ps_project-idcentrolucro.
+    ls_wbs_new-respsbl_cctr              = ps_project-ccresponsavel.
+    ls_wbs_new-request_cctr              = ps_project-ccsolicitante.
+    ls_wbs_new-location                  = ps_project-idlocalizacao.
+    ls_wbs_new-wbs_basic_start_date      = ps_project-dtinicio.
+    ls_wbs_new-wbs_basic_finish_date     = ps_project-dtfim.
+    APPEND ls_wbs_new TO lt_wbs_new.
+
+    "----------------------------------------------------------
+    " Z-fields
+    "----------------------------------------------------------
+    DATA: ls_integ_ecosys_sap TYPE bapi_te_wbs_element.
+
+    "Get solic name
+    SELECT SINGLE orgtx FROM t527x INTO @DATA(lv_orgtx_solic) WHERE orgeh = @ps_project-idgerenciasolicitante.
+    IF sy-subrc <> 0.
+    ENDIF.                                         "#EC EMPTY_IF_BRANCH
+
+    "Get resp name
+    SELECT SINGLE orgtx FROM t527x INTO @DATA(lv_orgtx_resp) WHERE orgeh = @ps_project-idgerenciasolicitante.
+    IF sy-subrc <> 0.
+    ENDIF.                                         "#EC EMPTY_IF_BRANCH
+
+    ls_integ_ecosys_sap-wbs_element     = ps_project-projectidsap.
+    ls_integ_ecosys_sap-zzpriorprj      = ps_project-idprioridade.
+    ls_integ_ecosys_sap-zz_program_l1   = ps_project-programa.
+    ls_integ_ecosys_sap-zz_strategy     = ps_project-estrateg.
+    ls_integ_ecosys_sap-zz_sub_strat    = ps_project-subestrateg.
+    ls_integ_ecosys_sap-zz_macro_prj    = ps_project-macroproj.
+    ls_integ_ecosys_sap-zz_process_l1   = ps_project-process.
+    ls_integ_ecosys_sap-zz_prod_serv    = ps_project-dscproduto.
+    ls_integ_ecosys_sap-zzcadeia_valor  = ps_project-fase.
+    ls_integ_ecosys_sap-zz_pais         = ps_project-pais.
+    ls_integ_ecosys_sap-zz_stat_1       = ps_project-estado.
+    ls_integ_ecosys_sap-zz_perc_stat_1  = '100'.
+    ls_integ_ecosys_sap-zz_solic_cod    = ps_project-idgerenciasolicitante.
+    ls_integ_ecosys_sap-zz_resp_cod     = ps_project-idgerenciaexecutante.
+    ls_integ_ecosys_sap-zzfundid        = ps_project-codigofundo.
+    ls_integ_ecosys_sap-zz_solic_name   = lv_orgtx_solic.
+    ls_integ_ecosys_sap-zz_resp_name    = lv_orgtx_resp.
+    "--- Export to memory (SHARED BUFFER) to program LCJ2054F04 (of bellow BAPI).
+    "EXPORT ls_integ_ecosys_sap = ls_integ_ecosys_sap TO MEMORY ID 'ZFIELDS_FROM_INTEGRATION_ECOSYS_SAP'.
+    CALL FUNCTION 'ZVLPS_ECOSYS_EXP_WBS_TOP'
+      EXPORTING
+        is_prps = ls_integ_ecosys_sap.
+
+    " clear buffer data
+    CALL FUNCTION 'BAPI_PS_INITIALIZATION'.
+
+    "--- Call the CREATE_MULTI BAPI -------------------------------------------
+    CALL FUNCTION 'BAPI_BUS2054_CREATE_MULTI'
+      EXPORTING
+        i_project_definition = CONV ps_pspid( ps_project-projectidsap )
+      TABLES
+        it_wbs_element       = lt_wbs_new
+        et_return            = lt_return.
+
+    " Error?
+    prepare_message(
+      EXPORTING
+        it_messages = lt_return
+      IMPORTING
+        ev_message  = p_ret_message
+        ev_status   = p_ret_status ).
+
+    IF p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDIF.
+
+    " BAPI Pre commit
+    FREE lt_return.
+    CALL FUNCTION 'BAPI_PS_PRECOMMIT'
+      TABLES
+        et_return = lt_return. "#EC CI_SEL_NESTED or "#EC CI_SROFC_NESTED
+
+    " Error?
+    prepare_message(
+      EXPORTING
+        it_messages = lt_return
+      IMPORTING
+        ev_message  = p_ret_message
+        ev_status   = p_ret_status ).
+
+    IF p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDIF.
+
+    " Success
+    IF p_ret_message IS INITIAL.
+      p_ret_status  = cc_success.
+      CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+        EXPORTING
+          wait = abap_true.
+
+      "return "PEP TOPO" (same as proj. code)
+      p_elemento_pep = ps_project-projectidsap.
+
+      "get CHAVE_SAP (objnr)
+      "no more needed here...
+*      SELECT SINGLE objnr
+*        FROM proj
+*       WHERE pspid = @ps_project-projectidsap
+*        INTO @DATA(lv_objnr).
+*      IF sy-subrc = 0.
+*        p_chave_sap = lv_objnr.
+*      ENDIF.
+
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>CREATE_PROJECT
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] PS_PROJECT                     TYPE        ZCL_ZOVPS_PPM_DMESTRES_MPC=>TS_MANTERPROJETOS
+* | [<---] P_RET_STATUS                   TYPE        STRING
+* | [<---] P_RET_MESSAGE                  TYPE        STRING
+* | [<---] P_RET_PROJECT                  TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD create_project.
+
+    CLEAR:
+        p_ret_status,
+        p_ret_message,
+        p_ret_project.
+
+    "---------------------------------------------
+    " GENERATE SEQUENCE for new project
+    "---------------------------------------------
+    DATA ls_project	TYPE zcl_zovps_ppm_dmestres_mpc=>ts_manterprojetos.
+    ls_project = ps_project.
+
+    DATA lv_proj_new TYPE string.
+    lv_proj_new = zcl_vlps_integ_sap_ecosys=>get_new_seq_proj( ls_project-idclassificacao ). "e.g.: C,G,etc.
+
+    IF lv_proj_new IS INITIAL.
+      "ERROR for new project code
+      p_ret_status  = cc_error.
+      p_ret_message = 'Não foi possível criar novo sequencial p/novo proj.'(006).
+      RETURN.
+    ENDIF.
+
+    ls_project-projectidsap = lv_proj_new.
+
+    "---------------------------------------------
+    " CREATE PROJECT
+    "---------------------------------------------
+    DATA:
+      ls_def           TYPE bapi_bus2001_new,
+      lt_return        TYPE TABLE OF bapiret2,
+      lt_precommit_ret TYPE TABLE OF bapiret2.
+
+    ls_def-project_definition = ls_project-projectidsap.             " e.g. G000123
+    ls_def-description        = ls_project-descricao.
+    ls_def-project_profile    = ls_project-idclassificacao.
+
+    ls_def-plant              = ls_project-idcentro.
+    ls_def-profit_ctr         = ls_project-idcentrolucro.
+    ls_def-start              = ls_project-dtinicio.
+    ls_def-finish             = ls_project-dtfim.
+    ls_def-location           = ls_project-idlocalizacao.
+    ls_def-responsible_no     = ls_project-responsavel.
+
+    " clear buffer data
+    CALL FUNCTION 'BAPI_PS_INITIALIZATION'.
+
+    CALL FUNCTION 'BAPI_BUS2001_CREATE'
+      EXPORTING
+        i_project_definition = ls_def
+      TABLES
+        et_return            = lt_return.
+
+    " Error?
+    prepare_message(
+      EXPORTING
+        it_messages = lt_return
+      IMPORTING
+        ev_message  = p_ret_message
+        ev_status   = p_ret_status ).
+
+    IF p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDIF.
+
+    "BAPI Pre commit
+    FREE lt_return.
+    CALL FUNCTION 'BAPI_PS_PRECOMMIT'
+      TABLES
+        et_return = lt_return. "#EC CI_SEL_NESTED or "#EC CI_SROFC_NESTED
+
+    " Error?
+    prepare_message(
+      EXPORTING
+        it_messages = lt_return
+      IMPORTING
+        ev_message  = p_ret_message
+        ev_status   = p_ret_status ).
+
+    IF p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDIF.
+
+    " Success
+    IF p_ret_message IS INITIAL.
+      p_ret_status  = cc_success.
+      p_ret_project = ls_project-projectidsap.
+      CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+        EXPORTING
+          wait = abap_true.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>FORMAT_DATE_OUT
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] P_DATE                         TYPE        STRING
+* | [<-()] P_FORMMATED_DATE               TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD FORMAT_DATE_OUT.
+
+    CLEAR p_formmated_date.
+    p_formmated_date = p_date+6(2) && p_date+4(2) && p_date(4).
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>GET_NEW_SEQ_PROJ
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] P_IDCLASSIFICACAO              TYPE        STRING
+* | [<-()] P_NEW_PROJ                     TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_new_seq_proj.
+
+    DATA: lv_proj_charact     TYPE char1,
+          lv_proj_search_from TYPE string,
+          lv_proj_search_to   TYPE string,
+          lv_proj_min         TYPE n LENGTH 6 VALUE '000000',
+          lv_proj_max         TYPE n LENGTH 6 VALUE '999999',
+          lv_new_proj_number  TYPE n LENGTH 6 VALUE '000000'.
+
+    CLEAR p_new_proj.
+
+    "Define initial character for project
+    lv_proj_charact     = zcl_vlps_integ_sap_ecosys=>get_proj_initial_character( p_idclassificacao ).
+    IF lv_proj_charact(1) = '?'.
+      RETURN. "Error initial character not defined
+    ENDIF.
+
+    lv_proj_search_from = |{ lv_proj_charact }{ lv_proj_min }|.
+    lv_proj_search_to   = |{ lv_proj_charact }{ lv_proj_max }|.
+
+    " define new proj. code
+    p_new_proj = zcl_vlps_number_get_next=>get_next_pspid(
+                   i_prjid        = lv_proj_charact           "OPSJ Project Identifier
+                   i_mask_pattern = CONV #( lv_proj_search_from )    "your mask text from OPSJ
+                   i_nrrangenr    = '01' ).       "SNRO interval used for PROJ
+
+    " original code, had error when there was a max yet e.g. c999999.
+*    SELECT MAX( pspid )
+*      FROM proj
+*     WHERE pspid BETWEEN @lv_proj_search_from AND @lv_proj_search_to
+*      INTO @DATA(lv_max_proj_found).
+*
+*    IF sy-subrc = 0 AND lv_max_proj_found IS NOT INITIAL.
+*
+*      "If fouund max is <> 999999, ok.
+*      IF lv_max_proj_found+1(6) <> lv_proj_max.
+*        lv_new_proj_number = lv_max_proj_found+1(6).
+*        lv_new_proj_number = lv_new_proj_number + 1.
+*        p_new_proj = |{ lv_proj_charact }{ lv_new_proj_number }|. "G000235, I000235
+*
+*        "ELSE, we need a number in between gaps...from 000000 to 999999.
+*      ELSE.
+*        " ERROR, cause we can not use 999999...this would be a problem for our application.
+*        " because some user havve created using 999999 already.
+*        " but it could have a free number between 000000 and 999999 yet
+*        " So we need to search for it, in case of tthis possibility...unfortunatelly it is not good for performance, but is executed in last case in this ELSE situation...
+*        " define new proj. code
+*        SELECT pspid
+*          FROM proj
+*         WHERE pspid BETWEEN @lv_proj_search_from AND @lv_proj_search_to
+*         ORDER BY pspid
+*          INTO TABLE @DATA(lt_projs).
+*        IF sy-subrc = 0 AND lt_projs IS NOT INITIAL.
+*          "Search new max possible in between possible gaps in numbers from 000000 to 999999
+*          DATA lv_previous_pspid TYPE n LENGTH 6 VALUE '000000'.
+*          LOOP AT lt_projs INTO DATA(ls_projs).
+*            IF ls_projs-pspid+1(6) - lv_previous_pspid > 2.
+*              lv_new_proj_number = lv_previous_pspid + 1.
+*              "lv_new_proj_number = ls_projs-pspid+1(6) - 1.
+*              p_new_proj = |{ lv_proj_charact }{ lv_new_proj_number }|. "G000001, I000001
+*              EXIT.
+*            ENDIF.
+*            lv_previous_pspid = ls_projs-pspid+1(6).
+*          ENDLOOP.
+*        ELSE.
+*          "error occurs, there is no free number in gap of entire sequence in table ?
+*        ENDIF.
+*      ENDIF.
+*
+*    ELSE.
+*      " FIRST NUMBER possible
+*      lv_new_proj_number = lv_proj_min + 1.
+*      p_new_proj = |{ lv_proj_charact }{ lv_new_proj_number }|. "G000001, I000001
+*    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>GET_PROJ_INITIAL_CHARACTER
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] P_IDCLASSIFICACAO              TYPE        STRING
+* | [<-()] P_CHARACTER                    TYPE        CHAR1
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_proj_initial_character.
+
+    CLEAR p_character.
+
+    CONSTANTS:
+      " Grupo G
+      c_zovps01        TYPE char10 VALUE 'ZOVPS01',
+      c_zovps02        TYPE char10 VALUE 'ZOVPS02',
+      c_zovps03        TYPE char10 VALUE 'ZOVPS03',
+      c_zovps04        TYPE char10 VALUE 'ZOVPS04',
+      c_zovps05        TYPE char10 VALUE 'ZOVPS05',
+      c_zovps06        TYPE char10 VALUE 'ZOVPS06',
+      c_zovps07        TYPE char10 VALUE 'ZOVPS07',
+      c_zovps08        TYPE char10 VALUE 'ZOVPS08',
+      c_zovps09        TYPE char10 VALUE 'ZOVPS09',
+      c_zovps10        TYPE char10 VALUE 'ZOVPS10',
+
+      " Grupo I
+      c_zovps11        TYPE char10 VALUE 'ZOVPS11',
+
+      " Grupo C
+      c_zovps12        TYPE char10 VALUE 'ZOVPS12',
+      c_zovps13        TYPE char10 VALUE 'ZOVPS13',
+      c_zovps14        TYPE char10 VALUE 'ZOVPS14',
+      c_zovps15        TYPE char10 VALUE 'ZOVPS15',
+      c_zovps16        TYPE char10 VALUE 'ZOVPS16',
+      c_zovps17        TYPE char10 VALUE 'ZOVPS17',
+      c_zovps18        TYPE char10 VALUE 'ZOVPS18',
+      c_zovps19        TYPE char10 VALUE 'ZOVPS19',
+      c_zovps20        TYPE char10 VALUE 'ZOVPS20',
+      c_zovps21        TYPE char10 VALUE 'ZOVPS21',
+
+      " Grupo R
+      c_zovps22        TYPE char10 VALUE 'ZOVPS22',
+      c_zovps23        TYPE char10 VALUE 'ZOVPS23',
+      c_zovps24        TYPE char10 VALUE 'ZOVPS24',
+      c_zovps25        TYPE char10 VALUE 'ZOVPS25',
+      c_zovps26        TYPE char10 VALUE 'ZOVPS26',
+      c_zovps27        TYPE char10 VALUE 'ZOVPS27',
+      c_zovps28        TYPE char10 VALUE 'ZOVPS28',
+      c_zovps29        TYPE char10 VALUE 'ZOVPS29',
+      c_zovps30        TYPE char10 VALUE 'ZOVPS30',
+      c_zovps31        TYPE char10 VALUE 'ZOVPS31',
+      c_zovps32        TYPE char10 VALUE 'ZOVPS32',
+
+      " Grupo L
+      c_zovps34        TYPE char10 VALUE 'ZOVPS34',
+
+      " Grupo X
+      c_zovps36        TYPE char10 VALUE 'ZOVPS36',
+
+      " Return letters
+      c_group_g        TYPE char1 VALUE 'G',
+      c_group_i        TYPE char1 VALUE 'I',
+      c_group_c        TYPE char1 VALUE 'C',
+      c_group_r        TYPE char1 VALUE 'R',
+      c_group_l        TYPE char1 VALUE 'L',
+      c_group_x        TYPE char1 VALUE 'X',
+      c_group_fallback TYPE char1 VALUE '?'.
+
+    CASE p_idclassificacao.
+
+        " --- Grupo G ---
+      WHEN c_zovps01 OR c_zovps02 OR c_zovps03 OR c_zovps04
+         OR c_zovps05 OR c_zovps06 OR c_zovps07 OR c_zovps08
+         OR c_zovps09 OR c_zovps10.
+        p_character = c_group_g.
+
+        " --- Grupo I ---
+      WHEN c_zovps11.
+        p_character = c_group_i.
+
+        " --- Grupo C ---
+      WHEN c_zovps12 OR c_zovps13 OR c_zovps14 OR c_zovps15
+         OR c_zovps16 OR c_zovps17 OR c_zovps18 OR c_zovps19
+         OR c_zovps20 OR c_zovps21.
+        p_character = c_group_c.
+
+        " --- Grupo R ---
+      WHEN c_zovps22 OR c_zovps23 OR c_zovps24 OR c_zovps25
+         OR c_zovps26 OR c_zovps27 OR c_zovps28 OR c_zovps29
+         OR c_zovps30 OR c_zovps31 OR c_zovps32.
+        p_character = c_group_r.
+
+        " --- Grupo L ---
+      WHEN c_zovps34.
+        p_character = c_group_l.
+
+        " --- Grupo X ---
+      WHEN c_zovps36.
+        p_character = c_group_x.
+
+      WHEN OTHERS.
+        p_character = '?'. "Error
+    ENDCASE.
+
+*    CLEAR p_character.
+*
+*    CASE p_idfaseprojeto.
+*
+*        " --- Grupo G ---
+*      WHEN 'ZOVPS01' OR 'ZOVPS02' OR 'ZOVPS03' OR 'ZOVPS04'
+*         OR 'ZOVPS05' OR 'ZOVPS06' OR 'ZOVPS07' OR 'ZOVPS08'
+*         OR 'ZOVPS09' OR 'ZOVPS10'.
+*        p_character = 'G'.
+*
+*        " --- Grupo I ---
+*      WHEN 'ZOVPS11'.
+*        p_character = 'I'.
+*
+*        " --- Grupo C ---
+*      WHEN 'ZOVPS12' OR 'ZOVPS13' OR 'ZOVPS14' OR 'ZOVPS15'
+*         OR 'ZOVPS16' OR 'ZOVPS17' OR 'ZOVPS18' OR 'ZOVPS19'
+*         OR 'ZOVPS20' OR 'ZOVPS21'.
+*        p_character = 'C'.
+*
+*        " --- Grupo R ---
+*      WHEN 'ZOVPS22' OR 'ZOVPS23' OR 'ZOVPS24' OR 'ZOVPS25'
+*         OR 'ZOVPS26' OR 'ZOVPS27' OR 'ZOVPS28' OR 'ZOVPS29'
+*         OR 'ZOVPS30' OR 'ZOVPS31' OR 'ZOVPS32'.
+*        p_character = 'R'.
+*
+*        " --- Grupo L ---
+*      WHEN 'ZOVPS34'.
+*        p_character = 'L'.
+*
+*        " --- Grupo X ---
+*      WHEN 'ZOVPS36'.
+*        p_character = 'X'.
+*
+*      WHEN OTHERS.
+*        p_character = '?'.  " fallback
+*    ENDCASE.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>INSERT_ZTABPROJ
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] P_PROJ_PPM                     TYPE        ZVLTPS_ECOSY_PRJ-PROJ_PPM
+* | [--->] P_PROJ_FASE                    TYPE        ZVLTPS_ECOSY_PRJ-PROJ_FASE
+* | [--->] P_PROJ_SAP                     TYPE        ZVLTPS_ECOSY_PRJ-PROJ_SAP
+* | [--->] P_ELEMENTO_PEP                 TYPE        ZVLTPS_ECOSY_PRJ-ELEMENTO_PEP
+* | [--->] P_STATUS                       TYPE        ZVLTPS_ECOSY_PRJ-STATUS
+* | [--->] P_MENSAGEM                     TYPE        ZVLTPS_ECOSY_PRJ-MENSAGEM
+* | [<-()] P_RET_STATUS                   TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD insert_ztabproj.
+
+    DATA ls_zvltps_ecosy_prj TYPE zvltps_ecosy_prj.
+
+    CLEAR p_ret_status.
+
+    "DATA(lv_objnr) = select_objnr_from_pspid( CONV #( p_elemento_pep ) ).
+
+    ls_zvltps_ecosy_prj-proj_ppm      = p_proj_ppm.
+    ls_zvltps_ecosy_prj-proj_fase     = p_proj_fase.
+    ls_zvltps_ecosy_prj-chave_sap     = space.
+    ls_zvltps_ecosy_prj-proj_sap      = p_proj_sap.
+    ls_zvltps_ecosy_prj-elemento_pep  = p_elemento_pep.
+
+    ls_zvltps_ecosy_prj-status        = p_status. "BAPI Success/Error
+    ls_zvltps_ecosy_prj-mensagem      = p_mensagem. "mensagem BAPI, apenas se for erro.
+
+    ls_zvltps_ecosy_prj-usuario       = sy-uname.
+
+    ls_zvltps_ecosy_prj-data_cria     = sy-datum.
+    ls_zvltps_ecosy_prj-hora_cria     = sy-uzeit.
+    ls_zvltps_ecosy_prj-data_mod      = '00000000'.
+    ls_zvltps_ecosy_prj-hora_mod      = '000000'.
+
+    "Smart command: Insert or Update the record of Ztable
+    MODIFY zvltps_ecosy_prj FROM ls_zvltps_ecosy_prj. "#EC CI_SEL_NESTED or "#EC CI_SROFC_NESTED
+
+    IF sy-subrc = 0.
+      p_ret_status = cc_success.
+      COMMIT WORK.
+    ELSE.
+      p_ret_status = cc_error.
+      ROLLBACK WORK.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>INSERT_ZTABPROJ_PEP_CHILD
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] P_PROJ_PPM                     TYPE        ZVLTPS_ECOSY_PRJ-PROJ_PPM
+* | [--->] P_PROJ_FASE                    TYPE        ZVLTPS_ECOSY_PRJ-PROJ_FASE
+* | [--->] P_PROJ_SAP                     TYPE        ZVLTPS_ECOSY_PRJ-PROJ_SAP
+* | [--->] P_ELEMENTO_PEP                 TYPE        ZVLTPS_ECOSY_PRJ-ELEMENTO_PEP
+* | [--->] P_STATUS                       TYPE        ZVLTPS_ECOSY_PRJ-STATUS
+* | [--->] P_MENSAGEM                     TYPE        ZVLTPS_ECOSY_PRJ-MENSAGEM
+* | [<-()] P_RET_STATUS                   TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD insert_ztabproj_pep_child.
+
+    DATA ls_zvltps_ecosy_prj TYPE zvltps_ecosy_prj.
+
+    CLEAR p_ret_status.
+
+    IF p_status = cc_success.
+      DATA(lv_objnr) = select_objnr_from_pspid( CONV #( p_elemento_pep ) ).
+    ENDIF.
+
+    ls_zvltps_ecosy_prj-proj_ppm      = p_proj_ppm.
+    ls_zvltps_ecosy_prj-proj_fase     = p_proj_fase.
+    ls_zvltps_ecosy_prj-chave_sap     = lv_objnr.
+    ls_zvltps_ecosy_prj-proj_sap      = p_proj_sap.
+    ls_zvltps_ecosy_prj-elemento_pep  = p_elemento_pep.
+
+    ls_zvltps_ecosy_prj-status        = p_status. "BAPI Success/Error
+    ls_zvltps_ecosy_prj-mensagem      = p_mensagem. "mensagem BAPI, apenas se for erro.
+
+    ls_zvltps_ecosy_prj-usuario       = sy-uname.
+
+    ls_zvltps_ecosy_prj-data_cria     = sy-datum.
+    ls_zvltps_ecosy_prj-hora_cria     = sy-uzeit.
+    ls_zvltps_ecosy_prj-data_mod      = '00000000'.
+    ls_zvltps_ecosy_prj-hora_mod      = '000000'.
+
+    "Smart command: Insert or Update the record of Ztable
+    MODIFY zvltps_ecosy_prj FROM ls_zvltps_ecosy_prj. "#EC CI_SEL_NESTED or "#EC CI_SROFC_NESTED
+
+    IF sy-subrc = 0.
+      p_ret_status = cc_success.
+      COMMIT WORK.
+    ELSE.
+      p_ret_status = cc_error.
+      ROLLBACK WORK.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>PACK_INTO_BAPIPAREX
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IV_STRUCT_NAME                 TYPE        BAPIPAREX-STRUCTURE
+* | [--->] IS_DATA                        TYPE        ANY
+* | [<-()] CS_EXT                         TYPE        BAPIPAREX
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD PACK_INTO_BAPIPAREX.
+
+    DATA lv_cont TYPE c LENGTH 960.
+
+    CLEAR cs_ext.
+    cs_ext-structure = iv_struct_name.
+
+    " Cast the incoming structure into a 960-char buffer
+    lv_cont = is_data.
+
+    cs_ext-valuepart1 = lv_cont+000(240).
+    cs_ext-valuepart2 = lv_cont+240(240).
+    cs_ext-valuepart3 = lv_cont+480(240).
+    cs_ext-valuepart4 = lv_cont+720(240).
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>PREPARE_MESSAGE
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IT_MESSAGES                    TYPE        TT_RETURN
+* | [<---] EV_MESSAGE                     TYPE        STRING
+* | [<---] EV_STATUS                      TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD prepare_message.
+
+    "-------------------------------
+    " IMPORTANT
+    " ERROR cases:
+    " In this method we search only for
+    " ERROR messages.
+    "
+    " If SUCCESS, we return just
+    "  Status=S + empty message.
+    "-------------------------------
+    CLEAR:
+       ev_message,
+       ev_status.
+
+    DATA lv_count TYPE i.
+    DATA: lv_string TYPE string.
+
+    LOOP AT it_messages INTO DATA(ls_response) WHERE type CO 'EAX'. " AND id <> 'CNIF_PI'  AND number <> '007'.
+      ADD 1 TO lv_count.
+      CLEAR lv_string.
+      MESSAGE ID ls_response-id
+              TYPE ls_response-type
+            NUMBER ls_response-number
+              WITH ls_response-message_v1
+                   ls_response-message_v2
+                   ls_response-message_v3
+                   ls_response-message_v4
+              INTO lv_string.
+      IF lv_count = 1.
+        ev_message = |{ ls_response-id };{ ls_response-number };{ lv_string }|.
+      ELSE.
+        ev_message = |{ ev_message },{ ls_response-id };{ ls_response-number };{ lv_string }|.
+      ENDIF.
+      ev_status = cc_error.
+      IF lv_count > 1.
+        EXIT.
+      ENDIF.
+    ENDLOOP.
+
+    IF ev_status IS INITIAL.
+      ev_status = cc_success.
+      ev_message = ''.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>PREPARE_PROJ_RANGES
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IT_PROJECTS                    TYPE        TT_TOMANTERPROJETO
+* | [<---] ET_PROJ_PPM_RANGE              TYPE        TT_PROJECTID_RANGE
+* | [<---] ET_PROJ_FASE_RANGE             TYPE        TT_PROJ_FASE_RANGE
+* | [<---] ET_PROJ_SAP_RANGE              TYPE        TT_PROJ_SAP_RANGE
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD prepare_proj_ranges.
+
+    FREE:
+      et_proj_ppm_range,
+      et_proj_fase_range,
+      et_proj_sap_range.
+
+    LOOP AT it_projects INTO DATA(ls_item_entity).
+      "Fase proj PPM
+      APPEND VALUE #( sign = 'I'
+                      option = 'EQ'
+                      low = ls_item_entity-idfaseprojeto ) TO et_proj_fase_range.
+
+      "proj PPM
+      APPEND VALUE #( sign = 'I'
+                      option = 'EQ'
+                      low = ls_item_entity-projectid ) TO et_proj_ppm_range.
+      "proj SAP
+      APPEND VALUE #( sign = 'I'
+                      option = 'EQ'
+                      low = ls_item_entity-projectidsap ) TO et_proj_sap_range.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>READ_OBJNR_PROJECT
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] P_PROJECT                      TYPE        STRING
+* | [<-()] P_OBJNR                        TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD READ_OBJNR_PROJECT.
+
+
+    CLEAR p_objnr.
+
+    SELECT SINGLE objnr
+      FROM proj
+     WHERE pspid = @p_project
+      INTO @p_objnr.
+
+    IF sy-subrc <> 0. "#EC EMPTY_IF_BRANCH
+      "no error
+    ENDIF. "#EC EMPTY_IF_BRANCH
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>READ_ZPEP_BY_RANGE
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IR_PROJ_PPM                    TYPE        TT_PROJECTID_RANGE
+* | [--->] IR_PROJ_FASE                   TYPE        TT_PROJ_FASE_RANGE
+* | [--->] IR_PROJ_SAP                    TYPE        TT_PROJ_SAP_RANGE
+* | [--->] IR_ELEMENTO_PEP                TYPE        TT_ELEMENTO_PEP_RANGE
+* | [<-()] ET_ZPROJECTS                   TYPE        ZVLTTPS_ECOSY_PRJ
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD read_zpep_by_range.
+
+    DATA lt_projectid_range TYPE RANGE OF zvltps_ecosy_prj-proj_ppm.
+    DATA lt_proj_fase_range TYPE RANGE OF zvltps_ecosy_prj-proj_fase.
+    DATA lt_proj_sap_range TYPE RANGE OF zvltps_ecosy_prj-proj_sap.
+    DATA lt_elemento_pep_range TYPE RANGE OF zvltps_ecosy_prj-elemento_pep.
+
+    FREE et_zprojects.
+
+    "must have proj sap already created on this step
+    IF ir_proj_sap IS INITIAL.
+      RETURN.
+    ENDIF.
+
+    "must have elem. pep already created on this step
+    IF ir_elemento_pep IS INITIAL.
+      RETURN.
+    ENDIF.
+
+    lt_projectid_range    = ir_proj_ppm.
+    lt_proj_fase_range    = ir_proj_fase.
+    lt_proj_sap_range     = ir_proj_sap.
+    lt_elemento_pep_range = ir_elemento_pep.
+
+    SORT lt_projectid_range BY low.
+    DELETE ADJACENT DUPLICATES FROM lt_projectid_range COMPARING low.
+    DELETE lt_projectid_range WHERE low IS INITIAL.
+
+    SORT lt_proj_fase_range BY low.
+    DELETE ADJACENT DUPLICATES FROM lt_proj_fase_range COMPARING low.
+    DELETE lt_proj_fase_range WHERE low IS INITIAL.
+
+    SORT lt_proj_sap_range BY low.
+    DELETE ADJACENT DUPLICATES FROM lt_proj_sap_range COMPARING low.
+    DELETE lt_proj_sap_range WHERE low IS INITIAL.
+
+    SORT lt_elemento_pep_range BY low.
+    DELETE ADJACENT DUPLICATES FROM lt_elemento_pep_range COMPARING low.
+    DELETE lt_elemento_pep_range WHERE low IS INITIAL.
+
+    "Selection
+    SELECT *
+      FROM zvltps_ecosy_prj
+     WHERE proj_ppm     IN @lt_projectid_range
+       AND proj_fase    IN @lt_proj_fase_range
+       AND proj_sap     IN @lt_proj_sap_range
+       AND elemento_pep IN @lt_elemento_pep_range
+      INTO TABLE @et_zprojects.
+
+    IF sy-subrc <> 0.
+      "it is not and error
+    ENDIF.                                         "#EC EMPTY_IF_BRANCH
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>READ_ZPROJS_BY_TOMANTERPROJETO
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IT_TOMANTERPROJETO             TYPE        TT_TOMANTERPROJETO
+* | [<-()] ET_ZPROJECTS                   TYPE        ZVLTTPS_ECOSY_PRJ
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD read_zprojs_by_tomanterprojeto.
+*IT_TOMANTERPROJETO
+*ET_ZPROJECTS
+
+    DATA lt_proj_ppm_range TYPE RANGE OF zvltps_ecosy_prj-proj_ppm.
+    DATA lt_proj_fase_range TYPE RANGE OF zvltps_ecosy_prj-proj_fase.
+    DATA lt_proj_sap_range TYPE RANGE OF zvltps_ecosy_prj-proj_sap.
+
+    FREE et_zprojects.
+
+    prepare_proj_ranges(
+      EXPORTING
+        it_projects        = it_tomanterprojeto
+      IMPORTING
+        et_proj_ppm_range  = lt_proj_ppm_range
+        et_proj_fase_range = lt_proj_fase_range
+        et_proj_sap_range  = lt_proj_sap_range
+    ).
+
+    "Read Z-records, in case they exist.
+    et_zprojects = zcl_vlps_integ_sap_ecosys=>read_zproj_by_range(
+                                                       ir_proj_ppm  = lt_proj_ppm_range
+                                                       ir_proj_fase = lt_proj_fase_range
+                                                       ir_proj_sap = lt_proj_sap_range
+                                                     ).
+
+*    DATA lt_proj_ppm_range TYPE RANGE OF zvltps_ecosy_prj-proj_ppm.
+*    DATA lt_proj_fase_range TYPE RANGE OF zvltps_ecosy_prj-proj_fase.
+*    DATA lt_proj_sap_range TYPE RANGE OF zvltps_ecosy_prj-proj_sap.
+*
+*    FREE et_zprojects.
+*
+*    lt_proj_ppm_range = ir_proj_ppm.
+*    lt_proj_fase_range = ir_proj_fase.
+*    lt_proj_sap_range = ir_proj_sap.
+*
+*    SORT lt_proj_ppm_range BY low.
+*    DELETE ADJACENT DUPLICATES FROM lt_proj_ppm_range COMPARING low. " delete repeated EcoSys projects
+*    DELETE lt_proj_ppm_range WHERE low IS INITIAL. "Delete empty projects
+*
+*    SORT lt_proj_fase_range BY low.
+*    DELETE ADJACENT DUPLICATES FROM lt_proj_fase_range COMPARING low. " delete repeated
+*    DELETE lt_proj_fase_range WHERE low IS INITIAL. "Delete empty
+*
+*    SORT lt_proj_sap_range BY low.
+*    DELETE ADJACENT DUPLICATES FROM lt_proj_sap_range COMPARING low. " delete repeated EcoSys projects
+*    DELETE lt_proj_sap_range WHERE low IS INITIAL. "Delete empty projects
+*
+*    "Selection
+*    SELECT *
+*      FROM zvltps_ecosy_prj
+*     WHERE proj_ppm IN @lt_proj_ppm_range
+*       AND proj_fase IN @lt_proj_fase_range
+*       AND proj_sap IN @lt_proj_sap_range
+*      INTO TABLE @et_zprojects.
+*
+*    IF sy-subrc <> 0.
+*      "it is not and error
+*    ENDIF.                                         "#EC EMPTY_IF_BRANCH
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>READ_ZPROJ_BY_RANGE
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IR_PROJ_PPM                    TYPE        TT_PROJECTID_RANGE
+* | [--->] IR_PROJ_FASE                   TYPE        TT_PROJ_FASE_RANGE
+* | [--->] IR_PROJ_SAP                    TYPE        TT_PROJ_SAP_RANGE(optional)
+* | [<-()] ET_ZPROJECTS                   TYPE        ZVLTTPS_ECOSY_PRJ
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD read_zproj_by_range.
+
+    DATA lt_proj_ppm_range TYPE RANGE OF zvltps_ecosy_prj-proj_ppm.
+    DATA lt_proj_fase_range TYPE RANGE OF zvltps_ecosy_prj-proj_fase.
+    DATA lt_proj_sap_range TYPE RANGE OF zvltps_ecosy_prj-proj_sap.
+
+    FREE et_zprojects.
+
+    lt_proj_ppm_range = ir_proj_ppm.
+    lt_proj_fase_range = ir_proj_fase.
+    lt_proj_sap_range = ir_proj_sap.
+
+    SORT lt_proj_ppm_range BY low.
+    DELETE ADJACENT DUPLICATES FROM lt_proj_ppm_range COMPARING low. " delete repeated EcoSys projects
+    DELETE lt_proj_ppm_range WHERE low IS INITIAL. "Delete empty projects
+
+    SORT lt_proj_fase_range BY low.
+    DELETE ADJACENT DUPLICATES FROM lt_proj_fase_range COMPARING low. " delete repeated
+    DELETE lt_proj_fase_range WHERE low IS INITIAL. "Delete empty
+
+    SORT lt_proj_sap_range BY low.
+    DELETE ADJACENT DUPLICATES FROM lt_proj_sap_range COMPARING low. " delete repeated EcoSys projects
+    DELETE lt_proj_sap_range WHERE low IS INITIAL. "Delete empty projects
+
+    "Selection
+    SELECT *
+      FROM zvltps_ecosy_prj
+     WHERE proj_ppm IN @lt_proj_ppm_range
+       AND proj_fase IN @lt_proj_fase_range
+       AND proj_sap IN @lt_proj_sap_range
+      INTO TABLE @et_zprojects.
+
+    IF sy-subrc <> 0.
+      "it is not and error
+    ENDIF.                                         "#EC EMPTY_IF_BRANCH
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>SELECT_OBJNR_FROM_PSPID
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] IV_PSPID                       TYPE        PS_PSPID
+* | [<-()] RT_OBJNR                       TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD select_objnr_from_pspid.
+
+    CLEAR rt_objnr.
+
+    "get CHAVE_SAP of new pep (objnr)
+    SELECT SINGLE objnr
+      FROM proj
+     WHERE pspid = @iv_pspid
+      INTO @DATA(lv_objnr).
+    IF sy-subrc = 0.
+      rt_objnr = lv_objnr.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>UPDATE_PEP
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] PS_PEP                         TYPE        ZCL_ZOVPS_PPM_DMESTRES_MPC=>TS_MANTERPEPS
+* | [<---] P_RET_STATUS                   TYPE        STRING
+* | [<---] P_RET_MESSAGE                  TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD update_pep.
+
+    " IMPORTANT:
+    " Here is updated Child WBS-structure (child PEP)
+
+    CLEAR:
+      p_ret_status,
+      p_ret_message.
+
+    DATA:
+      lt_wbs     TYPE TABLE OF bapi_bus2054_chg,
+      ls_wbs     TYPE bapi_bus2054_chg,
+      lt_wbs_upd TYPE TABLE OF bapi_bus2054_upd,
+      ls_wbs_upd TYPE bapi_bus2054_upd,
+      lt_return  TYPE TABLE OF bapiret2.
+
+    ls_wbs-wbs_element                    = ps_pep-elementopep.
+    ls_wbs-description                    = ps_pep-descricao.
+    ls_wbs-proj_type                      = ps_pep-idtipoprojeto.
+    ls_wbs-priority                       = ps_pep-idprioridade.
+    ls_wbs-respsbl_cctr                   = ps_pep-ccresponsavel.
+    ls_wbs-request_cctr                   = ps_pep-ccsolicitante.
+    ls_wbs-wbs_planning_element           = ps_pep-elemplanejamento. "flag
+    ls_wbs-wbs_account_assignment_element = ps_pep-elemclassifcont. "flag
+    ls_wbs-location                       = ps_pep-idlocalizacao.
+    ls_wbs-wbs_basic_start_date           = ps_pep-dtinicio.
+    ls_wbs-wbs_basic_finish_date          = ps_pep-dtfim.
+    ls_wbs-wbs_up                         = ps_pep-elementopep(7).
+    APPEND ls_wbs TO lt_wbs.
+
+    ls_wbs_upd-wbs_element                    = ps_pep-elementopep.
+    ls_wbs_upd-description                    = abap_true.
+    ls_wbs_upd-proj_type                      = abap_true.
+    ls_wbs_upd-priority                       = abap_true.
+    ls_wbs_upd-respsbl_cctr                   = abap_true.
+    ls_wbs_upd-request_cctr                   = abap_true.
+    ls_wbs_upd-wbs_planning_element           = abap_true. "flag
+    ls_wbs_upd-wbs_account_assignment_element = abap_true. "flag
+    ls_wbs_upd-location                       = abap_true.
+    ls_wbs_upd-wbs_basic_start_date           = abap_true.
+    ls_wbs_upd-wbs_basic_finish_date          = abap_true.
+    ls_wbs_upd-wbs_up                         = abap_true.
+    APPEND ls_wbs_upd TO lt_wbs_upd.
+
+    "----------------------------------------------------------
+    " Z-fields
+    "----------------------------------------------------------
+    DATA: ls_integ_ecosys_sap TYPE bapi_te_wbs_element.
+    ls_integ_ecosys_sap-wbs_element     = ps_pep-projectidsap.
+    ls_integ_ecosys_sap-zz_liq_pep      = ps_pep-tipoliquidacaopep.
+    ls_integ_ecosys_sap-zz_bene_fisc    = ps_pep-beneficiofiscal.
+    ls_integ_ecosys_sap-zz_estrategia   = ps_pep-estrategiadispendio.
+    ls_integ_ecosys_sap-zz_sub_strat    = ps_pep-subestrategiadiependio.
+
+    "--- Export Z-fields to memory (SHARED BUFFER) to program LCJ2054F04 (of BAPI).
+    "EXPORT ls_integ_ecosys_sap = ls_integ_ecosys_sap TO MEMORY ID 'ZFIELDS_PEP_FROM_INTE_ECOSYS_SAP'.
+    CALL FUNCTION 'ZVLPS_ECOSYS_EXP_WBS_CHILD'
+      EXPORTING
+        is_prps = ls_integ_ecosys_sap.
+
+    " clear buffer data
+    CALL FUNCTION 'BAPI_PS_INITIALIZATION'.
+
+    CALL FUNCTION 'BAPI_BUS2054_CHANGE_MULTI'
+      EXPORTING
+        i_project_definition  = CONV ps_pspid( ps_pep-projectidsap )
+      TABLES
+        it_wbs_element        = lt_wbs
+        it_update_wbs_element = lt_wbs_upd
+        et_return             = lt_return.
+
+    " Error?
+    prepare_message(
+      EXPORTING
+        it_messages = lt_return
+      IMPORTING
+        ev_message  = p_ret_message
+        ev_status   = p_ret_status ).
+
+    IF p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDIF.
+
+    " Pre commit
+    FREE lt_return.
+    CALL FUNCTION 'BAPI_PS_PRECOMMIT'
+      TABLES
+        et_return = lt_return. "#EC CI_SEL_NESTED or "#EC CI_SROFC_NESTED
+
+    " Error?
+    prepare_message(
+      EXPORTING
+        it_messages = lt_return
+      IMPORTING
+        ev_message  = p_ret_message
+        ev_status   = p_ret_status ).
+
+    IF p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDIF.
+
+    "SUCCESS
+    CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+      EXPORTING
+        wait = 'X'.
+
+    p_ret_message = ''.
+    p_ret_status  = cc_success.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>UPDATE_PEP_TOPO
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] PS_PROJECT                     TYPE        ZCL_ZOVPS_PPM_DMESTRES_MPC=>TS_MANTERPROJETOS
+* | [<---] P_RET_STATUS                   TYPE        STRING
+* | [<---] P_RET_MESSAGE                  TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD update_pep_topo.
+
+    CLEAR:
+      p_ret_status,
+      p_ret_message.
+
+    DATA:
+      lt_wbs     TYPE TABLE OF bapi_bus2054_chg,
+      ls_wbs     TYPE bapi_bus2054_chg,
+      lt_wbs_upd TYPE TABLE OF bapi_bus2054_upd,
+      ls_wbs_upd TYPE bapi_bus2054_upd,
+      lt_return  TYPE TABLE OF bapiret2.
+
+    ls_wbs-wbs_element               = ps_project-projectidsap.       " **KEY of the WBS you will create**
+    ls_wbs-description               = ps_project-descricao.
+    ls_wbs-proj_type                 = ps_project-idtipoprojeto.
+    ls_wbs-priority                  = ps_project-idprioridade.
+    ls_wbs-profit_ctr                = ps_project-idcentrolucro.
+    ls_wbs-respsbl_cctr              = ps_project-ccresponsavel.
+    ls_wbs-request_cctr              = ps_project-ccsolicitante.
+    ls_wbs-location                  = ps_project-idlocalizacao.
+    ls_wbs-wbs_basic_start_date      = ps_project-dtinicio.
+    ls_wbs-wbs_basic_finish_date     = ps_project-dtfim.
+    APPEND ls_wbs TO lt_wbs.
+
+    ls_wbs_upd-wbs_element               = ps_project-projectidsap.       " KEY of the WBS
+    ls_wbs_upd-description               = abap_true.
+    ls_wbs_upd-proj_type                 = abap_true.
+    ls_wbs_upd-priority                  = abap_true.
+    ls_wbs_upd-respsbl_cctr              = abap_true.
+    ls_wbs_upd-request_cctr              = abap_true.
+    ls_wbs_upd-location                  = abap_true.
+    ls_wbs_upd-wbs_basic_start_date      = abap_true.
+    ls_wbs_upd-wbs_basic_finish_date     = abap_true.
+    APPEND ls_wbs_upd TO lt_wbs_upd.
+
+    "----------------------------------------------------------
+    " Z-fields
+    "----------------------------------------------------------
+    DATA: ls_integ_ecosys_sap TYPE bapi_te_wbs_element.
+
+    "Get solic name
+    SELECT SINGLE orgtx FROM t527x INTO @DATA(lv_orgtx_solic) WHERE orgeh = @ps_project-idgerenciasolicitante.
+    IF sy-subrc <> 0.
+    ENDIF.                                         "#EC EMPTY_IF_BRANCH
+
+    "Get resp name
+    SELECT SINGLE orgtx FROM t527x INTO @DATA(lv_orgtx_resp) WHERE orgeh = @ps_project-idgerenciasolicitante.
+    IF sy-subrc <> 0.
+    ENDIF.                                         "#EC EMPTY_IF_BRANCH
+
+    ls_integ_ecosys_sap-wbs_element     = ps_project-projectidsap.
+    ls_integ_ecosys_sap-zzpriorprj      = ps_project-idprioridade.
+    ls_integ_ecosys_sap-zz_program_l1   = ps_project-programa.
+    ls_integ_ecosys_sap-zz_strategy     = ps_project-estrateg.
+    ls_integ_ecosys_sap-zz_sub_strat    = ps_project-subestrateg.
+    ls_integ_ecosys_sap-zz_macro_prj    = ps_project-macroproj.
+    ls_integ_ecosys_sap-zz_process_l1   = ps_project-process.
+    ls_integ_ecosys_sap-zz_prod_serv    = ps_project-dscproduto.
+    ls_integ_ecosys_sap-zzcadeia_valor  = ps_project-fase.
+    ls_integ_ecosys_sap-zz_pais         = ps_project-pais.
+    ls_integ_ecosys_sap-zz_stat_1       = ps_project-estado.
+    ls_integ_ecosys_sap-zz_perc_stat_1  = '100'.
+    ls_integ_ecosys_sap-zz_solic_cod    = ps_project-idgerenciasolicitante.
+    ls_integ_ecosys_sap-zz_resp_cod     = ps_project-idgerenciaexecutante.
+    ls_integ_ecosys_sap-zzfundid        = ps_project-codigofundo.
+    ls_integ_ecosys_sap-zz_solic_name   = lv_orgtx_solic.
+    ls_integ_ecosys_sap-zz_resp_name    = lv_orgtx_resp.
+    "--- Export to memory (SHARED BUFFER) to program LCJ2054F04 (of bellow BAPI).
+    "EXPORT ls_integ_ecosys_sap = ls_integ_ecosys_sap TO MEMORY ID 'ZFIELDS_FROM_INTEGRATION_ECOSYS_SAP'.
+    CALL FUNCTION 'ZVLPS_ECOSYS_EXP_WBS_TOP'
+      EXPORTING
+        is_prps = ls_integ_ecosys_sap.
+
+    " clear buffer data
+    CALL FUNCTION 'BAPI_PS_INITIALIZATION'.
+
+    CALL FUNCTION 'BAPI_BUS2054_CHANGE_MULTI'
+      EXPORTING
+        i_project_definition  = CONV ps_pspid( ps_project-projectidsap )
+      TABLES
+        it_wbs_element        = lt_wbs
+        it_update_wbs_element = lt_wbs_upd
+        et_return             = lt_return.
+
+    " Error?
+    prepare_message(
+      EXPORTING
+        it_messages = lt_return
+      IMPORTING
+        ev_message  = p_ret_message
+        ev_status   = p_ret_status ).
+
+    IF p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDIF.
+
+    " Pre commit
+    FREE lt_return.
+    CALL FUNCTION 'BAPI_PS_PRECOMMIT'
+      TABLES
+        et_return = lt_return. "#EC CI_SEL_NESTED or "#EC CI_SROFC_NESTED
+
+    " Error?
+    prepare_message(
+      EXPORTING
+        it_messages = lt_return
+      IMPORTING
+        ev_message  = p_ret_message
+        ev_status   = p_ret_status ).
+
+    IF p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDIF.
+
+    "SUCCESS
+    CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+      EXPORTING
+        wait = 'X'.
+    p_ret_message = ''.
+    p_ret_status  = cc_success.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>UPDATE_PROJECT
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] PS_PROJECT                     TYPE        ZCL_ZOVPS_PPM_DMESTRES_MPC=>TS_MANTERPROJETOS
+* | [<---] P_RET_STATUS                   TYPE        STRING
+* | [<---] P_RET_MESSAGE                  TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD update_project.
+
+    DATA: ls_proj     TYPE bapi_bus2001_chg,
+          ls_proj_upd TYPE bapi_bus2001_upd,
+          lt_return   TYPE TABLE OF bapiret2.
+
+    CLEAR:
+        p_ret_status,
+        p_ret_message.
+
+    CALL FUNCTION 'BAPI_PS_INITIALIZATION'.
+
+    ls_proj-project_definition  = ps_project-projectidsap.
+    ls_proj-description         = ps_project-descricao.
+    "ls_proj-project_profile     = ps_project-idclassificacao.
+    ls_proj-plant               = ps_project-idcentro.
+    ls_proj-profit_ctr          = ps_project-idcentrolucro.
+    ls_proj-start               = ps_project-dtinicio.
+    ls_proj-finish              = ps_project-dtfim.
+    ls_proj-location            = ps_project-idlocalizacao.
+
+    ls_proj_upd-description     = abap_true.
+    "ls_proj_upd-project_profile = abap_true.
+    ls_proj_upd-plant           = abap_true.
+    ls_proj_upd-profit_ctr      = abap_true.
+    ls_proj_upd-start           = abap_true.
+    ls_proj_upd-finish          = abap_true.
+    ls_proj_upd-location        = abap_true.
+
+    CALL FUNCTION 'BAPI_BUS2001_CHANGE'
+      EXPORTING
+        i_project_definition     = ls_proj
+        i_project_definition_upd = ls_proj_upd
+      TABLES
+        et_return                = lt_return.
+
+    " Error?
+    prepare_message(
+      EXPORTING
+        it_messages = lt_return
+      IMPORTING
+        ev_message  = p_ret_message
+        ev_status   = p_ret_status ).
+
+    IF p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDIF.
+
+    "BAPI pre commit
+    FREE lt_return.
+    CALL FUNCTION 'BAPI_PS_PRECOMMIT'
+      TABLES
+        et_return = lt_return. "#EC CI_IMUD_NESTED
+
+    " Error?
+    prepare_message(
+      EXPORTING
+        it_messages = lt_return
+      IMPORTING
+        ev_message  = p_ret_message
+        ev_status   = p_ret_status ).
+
+    IF p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDIF.
+
+    "Success
+    CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+      EXPORTING
+        wait = 'X'.
+    p_ret_message = ''.
+    p_ret_status  = cc_success.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>UPDATE_ZTABPROJ
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] PS_PROJECT                     TYPE        ZVLTPS_ECOSY_PRJ
+* | [--->] P_STATUS                       TYPE        ZVLTPS_ECOSY_PRJ-STATUS
+* | [--->] P_MENSAGEM                     TYPE        ZVLTPS_ECOSY_PRJ-MENSAGEM
+* | [<-()] P_RET_STATUS                   TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD update_ztabproj.
+
+    DATA ls_zvltps_ecosy_prj TYPE zvltps_ecosy_prj.
+
+    CLEAR p_ret_status.
+
+*    ls_zvltps_ecosy_prj-proj_ppm      = ps_project-proj_ppm.
+*    ls_zvltps_ecosy_prj-proj_fase     = ps_project-proj_fase.
+*    ls_zvltps_ecosy_prj-chave_sap     = ps_project-chave_sap. " proj-objnr
+*    ls_zvltps_ecosy_prj-proj_sap      = ps_project-proj_sap.
+*    ls_zvltps_ecosy_prj-elemento_pep  = ps_project-elemento_pep.
+*
+*    ls_zvltps_ecosy_prj-status        = p_status. "BAPI Success/Error
+*    ls_zvltps_ecosy_prj-mensagem      = p_mensagem. "mensagem BAPI, apenas se for erro.
+*
+*    ls_zvltps_ecosy_prj-usuario       = sy-uname.
+*
+*    ls_zvltps_ecosy_prj-data_cria     = ps_project-data_cria.
+*    ls_zvltps_ecosy_prj-hora_cria     = ps_project-hora_cria.
+*    ls_zvltps_ecosy_prj-data_mod      = sy-datum.
+*    ls_zvltps_ecosy_prj-hora_mod      = sy-uzeit.
+*
+*    "Smart command: Insert or Update the record of Ztable
+**    MODIFY zvltps_ecosy_prj FROM ls_zvltps_ecosy_prj
+**    where proj_ppm = ps_project-proj_ppm
+**      and proj_fase = ps_project-proj_fase
+**      and proj_sap = ps_project-proj_sap. "#EC CI_SEL_NESTED or "#EC CI_SROFC_NESTED
+
+    UPDATE zvltps_ecosy_prj
+       SET status   = p_status
+           mensagem = p_mensagem
+           data_mod = sy-datum
+           hora_mod = sy-uzeit
+     WHERE proj_ppm  = ps_project-proj_ppm
+       AND proj_fase = ps_project-proj_fase
+       AND proj_sap  = ps_project-proj_sap. "#EC CI_IMUD_NESTED
+
+    IF sy-subrc = 0.
+      p_ret_status = cc_success.
+      COMMIT WORK.
+    ELSE.
+      p_ret_status = cc_error.
+      ROLLBACK WORK.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>UPDATE_ZTABPROJ_FOR_PEP_CHILD
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] PS_PROJECT                     TYPE        ZVLTPS_ECOSY_PRJ
+* | [--->] P_STATUS                       TYPE        ZVLTPS_ECOSY_PRJ-STATUS
+* | [--->] P_MENSAGEM                     TYPE        ZVLTPS_ECOSY_PRJ-MENSAGEM
+* | [<-()] P_RET_STATUS                   TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD update_ztabproj_for_pep_child.
+
+    DATA ls_zvltps_ecosy_prj TYPE zvltps_ecosy_prj.
+
+    CLEAR p_ret_status.
+
+    UPDATE zvltps_ecosy_prj
+       SET status   = p_status
+           mensagem = p_mensagem
+           data_mod = sy-datum
+           hora_mod = sy-uzeit
+     WHERE proj_fase    = ps_project-proj_fase
+       AND proj_ppm     = ps_project-proj_ppm
+       AND proj_sap     = ps_project-proj_sap
+       AND elemento_pep = ps_project-elemento_pep.  "#EC CI_IMUD_NESTED
+
+    IF sy-subrc = 0.
+      p_ret_status = cc_success.
+      COMMIT WORK.
+    ELSE.
+      p_ret_status = cc_error.
+      ROLLBACK WORK.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_VLPS_INTEG_SAP_ECOSYS=>UPDATE_ZTABPROJ_FOR_PEP_TOPO
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] P_PROJ_PPM                     TYPE        ZVLTPS_ECOSY_PRJ-PROJ_PPM
+* | [--->] P_PROJ_FASE                    TYPE        ZVLTPS_ECOSY_PRJ-PROJ_FASE
+* | [--->] P_PROJ_SAP                     TYPE        ZVLTPS_ECOSY_PRJ-PROJ_SAP
+* | [--->] P_ELEMENTO_PEP                 TYPE        ZVLTPS_ECOSY_PRJ-ELEMENTO_PEP
+* | [--->] P_STATUS                       TYPE        ZVLTPS_ECOSY_PRJ-STATUS
+* | [--->] P_MENSAGEM                     TYPE        ZVLTPS_ECOSY_PRJ-MENSAGEM
+* | [<-()] P_RET_OK                       TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD update_ztabproj_for_pep_topo.
+
+    DATA ls_zvltps_ecosy_prj TYPE zvltps_ecosy_prj.
+
+    CLEAR p_ret_ok.
+
+    IF p_status = cc_success.
+      DATA(lv_objnr) = select_objnr_from_pspid( CONV #( p_elemento_pep ) ).
+    ENDIF.
+
+    UPDATE zvltps_ecosy_prj
+       SET chave_sap    = lv_objnr
+           elemento_pep = p_elemento_pep
+           status       = p_status
+           mensagem     = p_mensagem
+           data_mod     = sy-datum
+           hora_mod     = sy-uzeit
+     WHERE proj_fase    = p_proj_fase
+       AND proj_ppm     = p_proj_ppm
+       AND proj_sap     = p_proj_sap.               "#EC CI_IMUD_NESTED
+
+    IF sy-subrc = 0.
+      p_ret_ok = cc_success.
+      COMMIT WORK.
+    ELSE.
+      p_ret_ok = cc_error.
+      ROLLBACK WORK.
+    ENDIF.
+
+  ENDMETHOD.
+ENDCLASS.

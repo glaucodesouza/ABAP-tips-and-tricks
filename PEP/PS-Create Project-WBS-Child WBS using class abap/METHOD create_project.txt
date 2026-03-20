@@ -1,0 +1,95 @@
+  METHOD create_project.
+
+    CLEAR:
+        p_ret_status,
+        p_ret_message,
+        p_ret_project.
+
+    "---------------------------------------------
+    " GENERATE SEQUENCE for new project
+    "---------------------------------------------
+    DATA ls_project	TYPE zcl_zovps_ppm_dmestres_mpc=>ts_manterprojetos.
+    ls_project = ps_project.
+
+    DATA lv_proj_new TYPE string.
+    lv_proj_new = zcl_vlps_integ_sap_ecosys=>get_new_seq_proj( ls_project-idclassificacao ). "e.g.: C,G,etc.
+
+    IF lv_proj_new IS INITIAL.
+      "ERROR for new project code
+      p_ret_status  = cc_error.
+      p_ret_message = 'Não foi possível criar novo sequencial p/novo proj.'(006).
+      RETURN.
+    ENDIF.
+
+    ls_project-projectidsap = lv_proj_new.
+
+    "---------------------------------------------
+    " CREATE PROJECT
+    "---------------------------------------------
+    DATA:
+      ls_def           TYPE bapi_bus2001_new,
+      lt_return        TYPE TABLE OF bapiret2,
+      lt_precommit_ret TYPE TABLE OF bapiret2.
+
+    ls_def-project_definition = ls_project-projectidsap.             " e.g. G000123
+    ls_def-description        = ls_project-descricao.
+    ls_def-project_profile    = ls_project-idclassificacao.
+
+    ls_def-plant              = ls_project-idcentro.
+    ls_def-profit_ctr         = ls_project-idcentrolucro.
+    ls_def-start              = ls_project-dtinicio.
+    ls_def-finish             = ls_project-dtfim.
+    ls_def-location           = ls_project-idlocalizacao.
+    ls_def-responsible_no     = ls_project-responsavel.
+
+    " clear buffer data
+    CALL FUNCTION 'BAPI_PS_INITIALIZATION'.
+
+    CALL FUNCTION 'BAPI_BUS2001_CREATE'
+      EXPORTING
+        i_project_definition = ls_def
+      TABLES
+        et_return            = lt_return.
+
+    " Error?
+    prepare_message(
+      EXPORTING
+        it_messages = lt_return
+      IMPORTING
+        ev_message  = p_ret_message
+        ev_status   = p_ret_status ).
+
+    IF p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDIF.
+
+    "BAPI Pre commit
+    FREE lt_return.
+    CALL FUNCTION 'BAPI_PS_PRECOMMIT'
+      TABLES
+        et_return = lt_return. "#EC CI_SEL_NESTED or "#EC CI_SROFC_NESTED
+
+    " Error?
+    prepare_message(
+      EXPORTING
+        it_messages = lt_return
+      IMPORTING
+        ev_message  = p_ret_message
+        ev_status   = p_ret_status ).
+
+    IF p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDIF.
+
+    " Success
+    IF p_ret_message IS INITIAL.
+      p_ret_status  = cc_success.
+      p_ret_project = ls_project-projectidsap.
+      CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+        EXPORTING
+          wait = abap_true.
+    ENDIF.
+
+  ENDMETHOD.

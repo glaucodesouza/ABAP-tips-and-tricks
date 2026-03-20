@@ -1,0 +1,46 @@
+  METHOD prepare_message.
+
+    "-------------------------------
+    " IMPORTANT
+    " ERROR cases:
+    " In this method we search only for
+    " ERROR messages.
+    "
+    " If SUCCESS, we return just
+    "  Status=S + empty message.
+    "-------------------------------
+    CLEAR:
+       ev_message,
+       ev_status.
+
+    DATA lv_count TYPE i.
+    DATA: lv_string TYPE string.
+
+    LOOP AT it_messages INTO DATA(ls_response) WHERE type CO 'EAX'. " AND id <> 'CNIF_PI'  AND number <> '007'.
+      ADD 1 TO lv_count.
+      CLEAR lv_string.
+      MESSAGE ID ls_response-id
+              TYPE ls_response-type
+            NUMBER ls_response-number
+              WITH ls_response-message_v1
+                   ls_response-message_v2
+                   ls_response-message_v3
+                   ls_response-message_v4
+              INTO lv_string.
+      IF lv_count = 1.
+        ev_message = |{ ls_response-id };{ ls_response-number };{ lv_string }|.
+      ELSE.
+        ev_message = |{ ev_message },{ ls_response-id };{ ls_response-number };{ lv_string }|.
+      ENDIF.
+      ev_status = cc_error.
+      IF lv_count > 1.
+        EXIT.
+      ENDIF.
+    ENDLOOP.
+
+    IF ev_status IS INITIAL.
+      ev_status = cc_success.
+      ev_message = ''.
+    ENDIF.
+
+  ENDMETHOD.

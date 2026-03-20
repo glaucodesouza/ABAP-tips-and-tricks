@@ -1,0 +1,110 @@
+  METHOD create_pep.
+
+    " IMPORTANT:
+    " Here is created Child WBS-structure (child PEP)
+
+    CLEAR:
+      p_ret_status,
+      p_ret_message.
+      "p_chave_sap.
+
+    DATA: lt_wbs_new       TYPE TABLE OF bapi_bus2054_new,
+          ls_wbs_new       TYPE bapi_bus2054_new,
+          lt_return        TYPE TABLE OF bapiret2,
+          lt_precommit_ret TYPE TABLE OF bapiret2.
+
+    "----------------------------------------------------------
+    " Standard fields
+    "----------------------------------------------------------
+    ls_wbs_new-wbs_element                    = ps_pep-elementopep.
+    ls_wbs_new-description                    = ps_pep-descricao.
+    ls_wbs_new-proj_type                      = ps_pep-idtipoprojeto.
+    ls_wbs_new-priority                       = ps_pep-idprioridade.
+    ls_wbs_new-respsbl_cctr                   = ps_pep-ccresponsavel.
+    ls_wbs_new-request_cctr                   = ps_pep-ccsolicitante.
+    ls_wbs_new-wbs_planning_element           = ps_pep-elemplanejamento. "flag
+    ls_wbs_new-wbs_account_assignment_element = ps_pep-elemclassifcont. "flag
+    ls_wbs_new-location                       = ps_pep-idlocalizacao.
+    ls_wbs_new-wbs_basic_start_date           = ps_pep-dtinicio.
+    ls_wbs_new-wbs_basic_finish_date          = ps_pep-dtfim.
+    ls_wbs_new-wbs_up                         = ps_pep-elementopep(7).
+    APPEND ls_wbs_new TO lt_wbs_new.
+
+    "----------------------------------------------------------
+    " Z-fields
+    "----------------------------------------------------------
+    DATA: ls_integ_ecosys_sap TYPE bapi_te_wbs_element.
+    ls_integ_ecosys_sap-wbs_element     = ps_pep-projectidsap.
+    ls_integ_ecosys_sap-zz_liq_pep      = ps_pep-tipoliquidacaopep.
+    ls_integ_ecosys_sap-zz_bene_fisc    = ps_pep-beneficiofiscal.
+    ls_integ_ecosys_sap-zz_estrategia   = ps_pep-estrategiadispendio.
+    ls_integ_ecosys_sap-zz_sub_strat    = ps_pep-subestrategiadiependio.
+
+    "--- Export Z-fields to memory (SHARED BUFFER) to program LCJ2054F04 (inside this BAPI).
+    "EXPORT ls_integ_ecosys_sap = ls_integ_ecosys_sap TO MEMORY ID 'ZFIELDS_PEP_FROM_INTE_ECOSYS_SAP'.
+    CALL FUNCTION 'ZVLPS_ECOSYS_EXP_WBS_CHILD'
+      EXPORTING
+        is_prps       = ls_integ_ecosys_sap.
+
+    " clear buffer data
+    CALL FUNCTION 'BAPI_PS_INITIALIZATION'.
+
+    "--- Call the CREATE_MULTI BAPI -------------------------------------------
+    CALL FUNCTION 'BAPI_BUS2054_CREATE_MULTI'
+      EXPORTING
+        i_project_definition = CONV ps_pspid( ps_pep-projectidsap )
+      TABLES
+        it_wbs_element       = lt_wbs_new
+        et_return            = lt_return.
+
+    " Error?
+    prepare_message(
+      EXPORTING
+        it_messages = lt_return
+      IMPORTING
+        ev_message  = p_ret_message
+        ev_status   = p_ret_status ).
+
+    IF p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDIF.
+
+    " Pre commit
+    FREE lt_return.
+    CALL FUNCTION 'BAPI_PS_PRECOMMIT'
+      TABLES
+        et_return = lt_return. "#EC CI_SEL_NESTED or "#EC CI_SROFC_NESTED
+
+    " Error?
+    prepare_message(
+      EXPORTING
+        it_messages = lt_return
+      IMPORTING
+        ev_message  = p_ret_message
+        ev_status   = p_ret_status ).
+
+    IF p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDIF.
+
+    " Success
+    IF p_ret_message IS INITIAL.
+      p_ret_status  = cc_success.
+      CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+        EXPORTING
+          wait = abap_true.
+
+      "get CHAVE_SAP of new pep (objnr)
+      " no more needed here...
+*      SELECT SINGLE objnr
+*        FROM proj
+*       WHERE pspid = @ps_pep-elementopep
+*        INTO @DATA(lv_objnr).
+*      IF sy-subrc = 0.
+*        p_chave_sap = lv_objnr.
+*      ENDIF.
+    ENDIF.
+
+  ENDMETHOD.

@@ -1,0 +1,166 @@
+*&---------------------------------------------------------------------*
+*& Include          ZPS_CARGA_PEP_FULL_D01
+*&---------------------------------------------------------------------*
+CLASS lcl_pgm DEFINITION FINAL.
+
+  PUBLIC SECTION.
+
+    TYPES: BEGIN OF ty_file,
+             nivel            TYPE string,
+             pep              TYPE string,
+             descricao        TYPE string,
+             centro_custo      TYPE string,
+             centro_lucro      TYPE string,
+             resp             TYPE string,
+             responsavel      TYPE string,
+             empr             TYPE string,
+             mi               TYPE string,
+             ger_projeto      TYPE ps_vernr,
+             negocio          TYPE string,
+             estruturainvest  TYPE string,
+             programainvest   TYPE string,
+             ano              TYPE gjahr,
+             tipoprojeto      TYPE string,
+             centro_proj      TYPE string,
+             data_inicio_proj TYPE dats,
+             perfil_proj      TYPE string,
+             contract_manage  TYPE string,
+             ggo              TYPE string,
+             data_fim_proj    TYPE dats,
+             wbs_up           TYPE string,"deixar no final
+           END OF ty_file.
+
+
+    TYPES: BEGIN OF ty_file_ent,
+             nivel            TYPE string,
+             pep              TYPE string,
+             descricao        TYPE string,
+             centro_custo      TYPE string,
+             centro_lucro      TYPE string,
+             resp             TYPE string,
+             responsavel      TYPE string,
+             empr             TYPE string,
+             mi               TYPE string,
+             ger_projeto      TYPE ps_vernr,
+             negocio          TYPE string,
+             estruturainvest  TYPE string,
+             programainvest   TYPE string,
+             ano              TYPE gjahr,
+             tipoprojeto      TYPE string,
+             centro_proj      TYPE string,
+             data_inicio_proj TYPE string,
+             perfil_proj      TYPE string,
+             contract_manage  TYPE string,
+             ggo              TYPE string,
+             data_fim_proj    TYPE string,
+             wbs_up           TYPE string, "deixar no final
+           END OF ty_file_ent.
+
+    TYPES:
+      BEGIN OF ty_return,
+        status  TYPE bapi_mtype,
+        message TYPE bapi_msg,
+      END OF ty_return.
+
+
+    TYPES : BEGIN OF ty_saida,
+              icon TYPE icon_name.
+              INCLUDE TYPE ty_file.
+              INCLUDE TYPE ty_return.
+    TYPES:  END OF ty_Saida.
+
+    TYPES:
+      BEGIN OF ty_bdcdata,
+        program  TYPE bdcdata-program,  " Pool de módulos BDC
+        dynpro   TYPE bdcdata-dynpro,   " NÚmero de tela BDC
+        dynbegin TYPE bdcdata-dynbegin, " Início BDC de uma tela
+        fnam     TYPE bdcdata-fnam,     " Nome do campo
+        fval     TYPE bdcdata-fval,     " Valor do campo BDC
+      END OF ty_bdcdata.
+
+
+
+    TYPES: ty_t_file     TYPE STANDARD TABLE OF ty_file WITH DEFAULT KEY,
+           ty_t_file_ent TYPE STANDARD TABLE OF ty_file_ent WITH DEFAULT KEY,
+           ty_t_saida    TYPE STANDARD TABLE OF ty_saida WITH DEFAULT KEY,
+           ty_t_string   TYPE STANDARD TABLE OF string  WITH DEFAULT KEY,
+           ty_t_bdcdata  TYPE STANDARD TABLE OF ty_bdcdata WITH DEFAULT KEY.
+
+
+    CLASS-DATA: it_bdcdata TYPE ty_t_bdcdata,
+                it_msg     TYPE TABLE OF bdcmsgcoll,
+                wa_bdcdata TYPE ty_bdcdata.
+
+    CLASS-DATA: pep     TYPE bdcdata-fval,
+                ano     TYPE bdcdata-fval,
+                pos_inv TYPE bdcdata-fval,
+                prg_inv TYPE bdcdata-fval.
+
+    DATA: t_lines TYPE STANDARD TABLE OF tline,
+          s_lines TYPE tline.
+
+
+*Tabelas p/ SHDB
+
+    DATA : ti_bdc        TYPE TABLE OF bdcdata,
+           ti_bdcmsgcoll TYPE TABLE OF bdcmsgcoll.
+
+
+    CONSTANTS:
+       c_sep TYPE c VALUE ';'.
+
+    CONSTANTS:
+      BEGIN OF c_msg,
+        error       TYPE bapi_mtype VALUE 'E',
+        information TYPE bapi_mtype VALUE 'I',
+        warnning    TYPE bapi_mtype VALUE 'W',
+        success     TYPE bapi_mtype VALUE 'S',
+      END OF c_msg.
+
+
+
+    CLASS-METHODS:
+
+      screen,
+
+      get_filename
+        RETURNING VALUE(r_filename) TYPE string,
+
+      load_file
+        EXPORTING e_t_file TYPE ty_t_file_ent
+                  e_return TYPE ty_return,
+
+      convert_file
+        IMPORTING i_t_file        TYPE ty_t_string
+        RETURNING VALUE(r_t_file) TYPE ty_t_file_ent,
+
+      create_proj
+        IMPORTING i_t_file       TYPE ty_t_file
+        RETURNING VALUE(r_t_log) TYPE ty_t_saida,
+
+      show_log
+        IMPORTING i_t_log  TYPE ty_t_saida
+                  pfstatus TYPE pfstatus OPTIONAL,
+      data_read
+        RETURNING VALUE(r_t_file) TYPE ty_t_file,
+
+      set_checkbox
+        IMPORTING i_columns  TYPE REF TO cl_salv_columns_table
+                  i_campo    TYPE lvc_fname
+                  i_checkbox TYPE abap_bool
+        CHANGING  ch_column  TYPE REF TO cl_salv_column_table,
+
+      preenche_bdc
+        IMPORTING dynbegin TYPE bdcdata-dynbegin
+                  name     TYPE bdcdata-program
+                  value    TYPE bdcdata-dynpro,
+
+      preenche_value
+        IMPORTING name  TYPE bdcdata-fnam
+                  value TYPE bdcdata-fval,
+
+      upload
+        IMPORTING i_t_file        TYPE ty_t_file_ent
+        RETURNING VALUE(r_return) TYPE ty_return.
+
+ENDCLASS.

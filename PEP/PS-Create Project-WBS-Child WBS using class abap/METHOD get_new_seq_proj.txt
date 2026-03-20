@@ -1,0 +1,31 @@
+  METHOD get_new_seq_proj.
+  
+  " IMPORTANT
+  " Create external sequence number for new project
+
+    DATA: lv_proj_charact     TYPE char1,
+          lv_proj_search_from TYPE string,
+          lv_proj_search_to   TYPE string,
+          lv_proj_min         TYPE n LENGTH 6 VALUE '000000',
+          lv_proj_max         TYPE n LENGTH 6 VALUE '999999',
+          lv_new_proj_number  TYPE n LENGTH 6 VALUE '000000'.
+
+    CLEAR p_new_proj.
+
+    "Define initial character for project
+    lv_proj_charact     = zcl_vlps_integ_sap_ecosys=>get_proj_initial_character( p_idclassificacao ).
+    IF lv_proj_charact(1) = '?'.
+      RETURN. "Error initial character not defined
+    ENDIF.
+
+    lv_proj_search_from = |{ lv_proj_charact }{ lv_proj_min }|.
+    lv_proj_search_to   = |{ lv_proj_charact }{ lv_proj_max }|.
+
+    " define new proj. code
+    p_new_proj = zcl_vlps_number_get_next=>get_next_pspid(
+                   i_prjid        = lv_proj_charact           "OPSJ Project Identifier
+                   i_mask_pattern = CONV #( lv_proj_search_from )    "your mask text from OPSJ
+                   i_nrrangenr    = '01' ).       "SNRO interval used for PROJ
+
+
+  ENDMETHOD.

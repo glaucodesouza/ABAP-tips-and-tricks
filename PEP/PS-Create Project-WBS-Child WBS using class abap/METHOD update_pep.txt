@@ -1,0 +1,112 @@
+  METHOD update_pep.
+
+    " IMPORTANT:
+    " Here is updated Child WBS-structure (child PEP)
+
+    CLEAR:
+      p_ret_status,
+      p_ret_message.
+
+    DATA:
+      lt_wbs     TYPE TABLE OF bapi_bus2054_chg,
+      ls_wbs     TYPE bapi_bus2054_chg,
+      lt_wbs_upd TYPE TABLE OF bapi_bus2054_upd,
+      ls_wbs_upd TYPE bapi_bus2054_upd,
+      lt_return  TYPE TABLE OF bapiret2.
+
+    ls_wbs-wbs_element                    = ps_pep-elementopep.
+    ls_wbs-description                    = ps_pep-descricao.
+    ls_wbs-proj_type                      = ps_pep-idtipoprojeto.
+    ls_wbs-priority                       = ps_pep-idprioridade.
+    ls_wbs-respsbl_cctr                   = ps_pep-ccresponsavel.
+    ls_wbs-request_cctr                   = ps_pep-ccsolicitante.
+    ls_wbs-wbs_planning_element           = ps_pep-elemplanejamento. "flag
+    ls_wbs-wbs_account_assignment_element = ps_pep-elemclassifcont. "flag
+    ls_wbs-location                       = ps_pep-idlocalizacao.
+    ls_wbs-wbs_basic_start_date           = ps_pep-dtinicio.
+    ls_wbs-wbs_basic_finish_date          = ps_pep-dtfim.
+    ls_wbs-wbs_up                         = ps_pep-elementopep(7).
+    APPEND ls_wbs TO lt_wbs.
+
+    ls_wbs_upd-wbs_element                    = ps_pep-elementopep.
+    ls_wbs_upd-description                    = abap_true.
+    ls_wbs_upd-proj_type                      = abap_true.
+    ls_wbs_upd-priority                       = abap_true.
+    ls_wbs_upd-respsbl_cctr                   = abap_true.
+    ls_wbs_upd-request_cctr                   = abap_true.
+    ls_wbs_upd-wbs_planning_element           = abap_true. "flag
+    ls_wbs_upd-wbs_account_assignment_element = abap_true. "flag
+    ls_wbs_upd-location                       = abap_true.
+    ls_wbs_upd-wbs_basic_start_date           = abap_true.
+    ls_wbs_upd-wbs_basic_finish_date          = abap_true.
+    ls_wbs_upd-wbs_up                         = abap_true.
+    APPEND ls_wbs_upd TO lt_wbs_upd.
+
+    "----------------------------------------------------------
+    " Z-fields
+    "----------------------------------------------------------
+    DATA: ls_integ_ecosys_sap TYPE bapi_te_wbs_element.
+    ls_integ_ecosys_sap-wbs_element     = ps_pep-projectidsap.
+    ls_integ_ecosys_sap-zz_liq_pep      = ps_pep-tipoliquidacaopep.
+    ls_integ_ecosys_sap-zz_bene_fisc    = ps_pep-beneficiofiscal.
+    ls_integ_ecosys_sap-zz_estrategia   = ps_pep-estrategiadispendio.
+    ls_integ_ecosys_sap-zz_sub_strat    = ps_pep-subestrategiadiependio.
+
+    "--- Export Z-fields to memory (SHARED BUFFER) to program LCJ2054F04 (of BAPI).
+    "EXPORT ls_integ_ecosys_sap = ls_integ_ecosys_sap TO MEMORY ID 'ZFIELDS_PEP_FROM_INTE_ECOSYS_SAP'.
+    CALL FUNCTION 'ZVLPS_ECOSYS_EXP_WBS_CHILD'
+      EXPORTING
+        is_prps = ls_integ_ecosys_sap.
+
+    " clear buffer data
+    CALL FUNCTION 'BAPI_PS_INITIALIZATION'.
+
+    CALL FUNCTION 'BAPI_BUS2054_CHANGE_MULTI'
+      EXPORTING
+        i_project_definition  = CONV ps_pspid( ps_pep-projectidsap )
+      TABLES
+        it_wbs_element        = lt_wbs
+        it_update_wbs_element = lt_wbs_upd
+        et_return             = lt_return.
+
+    " Error?
+    prepare_message(
+      EXPORTING
+        it_messages = lt_return
+      IMPORTING
+        ev_message  = p_ret_message
+        ev_status   = p_ret_status ).
+
+    IF p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDIF.
+
+    " Pre commit
+    FREE lt_return.
+    CALL FUNCTION 'BAPI_PS_PRECOMMIT'
+      TABLES
+        et_return = lt_return. "#EC CI_SEL_NESTED or "#EC CI_SROFC_NESTED
+
+    " Error?
+    prepare_message(
+      EXPORTING
+        it_messages = lt_return
+      IMPORTING
+        ev_message  = p_ret_message
+        ev_status   = p_ret_status ).
+
+    IF p_ret_status = cc_error.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+      RETURN. "exit method
+    ENDIF.
+
+    "SUCCESS
+    CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+      EXPORTING
+        wait = 'X'.
+
+    p_ret_message = ''.
+    p_ret_status  = cc_success.
+
+  ENDMETHOD.

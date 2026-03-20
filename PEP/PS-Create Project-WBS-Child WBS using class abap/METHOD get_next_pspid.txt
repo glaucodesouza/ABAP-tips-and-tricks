@@ -1,0 +1,67 @@
+  METHOD get_next_pspid. "find_next_free.
+
+    DATA: lv_low    TYPE proj-pspid,
+          lv_high   TYPE proj-pspid,
+          lt_pos0   TYPE ty_t_pos0,
+          lv_digits TYPE i.
+
+    CLEAR r_pspid.
+
+    build_bounds(
+      EXPORTING i_mask = i_mask_pattern
+      IMPORTING e_low = lv_low e_high = lv_high e_pos0 = lt_pos0 e_digits = lv_digits ).
+
+    "Read existing PSPIDs matching the mask
+    DATA lt_used_pspid TYPE STANDARD TABLE OF proj-pspid WITH EMPTY KEY.
+    DATA(lv_like) = to_like_pattern( i_mask_pattern ).
+
+*    SELECT pspid
+*      FROM vsproj_cn
+*      INTO TABLE @lt_used_pspid
+*      WHERE pspid BETWEEN @lv_low AND @lv_high
+*        AND pspid LIKE @lv_like.
+    SELECT pspid
+      FROM proj
+      INTO TABLE @lt_used_pspid
+      WHERE pspid BETWEEN @lv_low AND @lv_high
+        AND pspid LIKE @lv_like.
+
+    "Convert to a hashed set of used numeric cores
+    DATA lt_used_num TYPE ty_t_num.
+    LOOP AT lt_used_pspid ASSIGNING FIELD-SYMBOL(<ps>).
+      INSERT extract_number( i_pspid = <ps> i_pos0 = lt_pos0 ) INTO TABLE lt_used_num.
+    ENDLOOP.
+
+    "Compute 10^digits - 1 without using '**'
+    DATA(lv_pow10) = 1.
+    DO lv_digits TIMES.
+      lv_pow10 = lv_pow10 * 10.
+    ENDDO.
+    DATA(lv_max) = lv_pow10 - 1.
+
+    "Smallest missing value starting at 1
+    DATA(lv_try) = 1.
+    DATA: lv_possible_one TYPE ps_pspid.
+    WHILE lv_try <= lv_max.
+      "check if realy do not is used in proj
+      READ TABLE lt_used_num WITH TABLE KEY table_line = lv_try TRANSPORTING NO FIELDS.
+      IF sy-subrc <> 0.
+        CLEAR lv_possible_one.
+        lv_possible_one = inject_number(
+                    i_mask   = i_mask_pattern
+                    i_pos0   = lt_pos0
+                    i_digits = lv_digits
+                    i_value  = lv_try ).
+        "check if realy do not is used in vsproj_cn
+        SELECT COUNT( * )
+          FROM vsproj_cn
+          WHERE pspid = @lv_possible_one.
+        IF sy-subrc <> 0.
+          r_pspid = lv_possible_one.
+          RETURN.
+        ENDIF.
+      ENDIF.
+      lv_try = lv_try + 1.
+    ENDWHILE.
+
+  ENDMETHOD.

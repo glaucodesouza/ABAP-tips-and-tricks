@@ -1,0 +1,31 @@
+*&---------------------------------------------------------------------*
+*& Include          ZPS_CARGA_PEP_FULL_SCR
+*&---------------------------------------------------------------------*
+************************************************************************
+
+SELECTION-SCREEN BEGIN OF BLOCK b01 WITH FRAME TITLE TEXT-b01.
+
+  SELECTION-SCREEN SKIP 1.
+
+  SELECTION-SCREEN BEGIN OF BLOCK b1a WITH FRAME TITLE TEXT-b1a.
+    PARAMETERS: rb_up   RADIOBUTTON GROUP g1 USER-COMMAND aaa,
+                rb_proc RADIOBUTTON GROUP g1.
+  SELECTION-SCREEN END OF BLOCK b1a.
+
+  SELECTION-SCREEN SKIP 1.
+
+  SELECTION-SCREEN BEGIN OF BLOCK b2a WITH FRAME TITLE TEXT-b2a.
+    PARAMETERS: rb_err   TYPE flag.
+  SELECTION-SCREEN END OF BLOCK b2a.
+
+  SELECTION-SCREEN SKIP 1.
+
+  PARAMETERS: p_file  TYPE text128 MODIF ID bbb,
+              p_proj TYPE flag MODIF ID opt, "cria projeto
+              p_pep TYPE flag MODIF ID opt, "cria pep
+              p_pos_im  TYPE flag MODIF ID opt. "cria posiçao investimento
+
+  SELECTION-SCREEN SKIP 1.
+
+
+SELECTION-SCREEN END OF BLOCK b01.
