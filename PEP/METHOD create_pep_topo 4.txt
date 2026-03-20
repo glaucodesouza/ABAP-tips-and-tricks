@@ -66,51 +66,10 @@
     ls_integ_ecosys_sap-zz_resp_name    = lv_orgtx_resp.
 
     "--- Export to memory (SHARED BUFFER)
+    "--- Será lido no ENHANCEMENT AO SALVAR PEP
     EXPORT ls_integ_ecosys_sap = ls_integ_ecosys_sap TO MEMORY ID 'ZFIELDS_FROM_INTEGRATION_ECOSYS_SAP'.
     "Fim teste 3
 
-    "INI teste 2
-*    TYPES: BEGIN OF ty_bapi_te_wbs_element,
-*             wbs_element TYPE bapi_te_wbs_element-wbs_element,
-*             zzpriorprj  TYPE bapi_te_wbs_element-zzpriorprj,
-*             zz_program_l1  TYPE BAPI_TE_WBS_ELEMENT-zz_program_l1,
-*             zz_strategy    TYPE BAPI_TE_WBS_ELEMENT-zz_strategy,
-*             zz_sub_strat   TYPE BAPI_TE_WBS_ELEMENT-zz_sub_strat,
-*             zz_macro_prj   TYPE BAPI_TE_WBS_ELEMENT-zz_macro_prj,
-*             zz_process_l1  TYPE BAPI_TE_WBS_ELEMENT-zz_process_l1,
-*             zz_prod_serv   TYPE BAPI_TE_WBS_ELEMENT-zz_prod_serv,
-*             zzcadeia_valor TYPE BAPI_TE_WBS_ELEMENT-zzcadeia_valor,
-*             zz_pais        TYPE BAPI_TE_WBS_ELEMENT-zz_pais,
-*             zz_stat_1      TYPE BAPI_TE_WBS_ELEMENT-zz_stat_1,
-*             zz_perc_stat_1 TYPE BAPI_TE_WBS_ELEMENT-zz_perc_stat_1,
-*             zz_solic_cod   TYPE BAPI_TE_WBS_ELEMENT-zz_solic_cod,
-*             zz_resp_cod    TYPE BAPI_TE_WBS_ELEMENT-zz_resp_cod,
-*             zzfundid       TYPE BAPI_TE_WBS_ELEMENT-zzfundid,
-*           END OF ty_bapi_te_wbs_element.
-*
-*    DATA: ls_custom_data TYPE ty_bapi_te_wbs_element,
-*          lt_custom_data TYPE STANDARD TABLE OF ty_bapi_te_wbs_element,
-*          ls_extensionin TYPE bapiparex,
-*          lt_extensionin TYPE STANDARD TABLE OF bapiparex.
-*
-*    ls_custom_data-wbs_element    = ps_project-projectidsap.
-*    ls_custom_data-zzpriorprj     = ps_project-idprioridade.
-*    ls_custom_data-zz_program_l1  = ps_project-programa.
-*    ls_custom_data-zz_strategy    = ps_project-estrateg.
-*    ls_custom_data-zz_sub_strat   = ps_project-subestrateg.
-*    ls_custom_data-zz_macro_prj   = ps_project-macroproj.
-*    ls_custom_data-zz_process_l1  = ps_project-process.
-*    ls_custom_data-zz_prod_serv   = ps_project-dscproduto.
-*    ls_custom_data-zzcadeia_valor = ps_project-fase.
-*    ls_custom_data-zz_pais        = ps_project-pais.
-*    ls_custom_data-zz_stat_1      = ps_project-estado.
-*    ls_custom_data-zz_perc_stat_1 = '100'.
-*    ls_custom_data-zz_solic_cod   = ps_project-idgerenciasolicitante.
-*    ls_custom_data-zz_resp_cod    = ps_project-idgerenciaexecutante.
-*    ls_custom_data-zzfundid       = ps_project-codigofundo.
-*    APPEND ls_custom_data TO lt_custom_data.
-*    CLEAR ls_custom_data.
-    "FIM teste 2
 
     " clear buffer data
     CALL FUNCTION 'BAPI_PS_INITIALIZATION'.
@@ -220,23 +179,6 @@
 
     ENDIF.
 
-*    DATA: it_wbs_element TYPE TABLE OF bapi_wbs_list,
-*          et_wbs_element TYPE TABLE OF bapi_bus2054_detail,
-*          et_return      TYPE TABLE OF bapiret2,
-*          extensionin    TYPE TABLE OF bapiparex,
-*          extensionout   TYPE TABLE OF bapiparex.
-*BREAK-POINT.
-*    CALL FUNCTION 'BAPI_BUS2054_GETDATA'
-*      EXPORTING
-*        i_project_definition = conv ps_pspid( ps_project-projectidsap )
-**       I_LANGUAGE           =
-**       I_MAX_ROWS           =
-*      TABLES
-*        it_wbs_element       = it_wbs_element
-*        et_wbs_element       = et_wbs_element
-*        et_return            = et_return
-*        extensionin          = extensionin
-*        extensionout         = extensionout.
 
 
   ENDMETHOD.
