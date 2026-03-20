@@ -1,0 +1,119 @@
+Para comparar duas tabelas internas em ABAP 7.5 e retornar os valores diferentes entre elas, você pode usar a instrução EXCEPT com a nova sintaxe de Open SQL introduzida nas versões mais recentes do ABAP. Aqui está um exemplo prático:
+🧩 Exemplo: Comparar duas tabelas internas e obter os registros diferentes
+ 
+TYPES: BEGIN OF tydata,
+         id TYPE i,
+         name TYPE string,
+       END OF tydata.
+ 
+DATA: lttable1 TYPE TABLE OF tydata,
+      lttable2 TYPE TABLE OF tydata,
+      ltdiff   TYPE TABLE OF tydata.
+ 
+* Preenchendo as tabelas com dados de exemplo
+lttable1 = VALUE #( ( id = 1 name = 'Alice' )
+                     ( id = 2 name = 'Bob' )
+                     ( id = 3 name = 'Charlie' ) ).
+
+
+lttable2 = VALUE #( ( id = 2 name = 'Bob' )
+                     ( id = 3 name = 'Charlie' )
+                     ( id = 4 name = 'Diana' ) ).
+ 
+* Comparando: registros em lttable1 que não estão em lttable2
+ltdiff = lttable1 EXCEPT lttable2.
+ 
+* Exibindo os resultados
+LOOP AT ltdiff INTO DATA(lsdiff).
+  WRITE: / lsdiff-id, ls_diff-name.
+ENDLOOP.
+ 
+🔍 Explicação:
+EXCEPT retorna os registros que estão em lt_table1 mas não em lt_table2.
+Para fazer o inverso (registros em lt_table2 que não estão em lt_table1), basta inverter: lt_diff = lt_table2 EXCEPT lt_table1.
+✅ Requisitos:
+Essa sintaxe funciona a partir do ABAP 7.4 SP08, mas é mais estável e recomendada no ABAP 7.5.
+As tabelas devem ser compatíveis em estrutura (mesmos campos e tipos).
+Se quiser comparar apenas por um campo (por exemplo, id), posso te mostrar como fazer isso também. Quer que eu monte esse exemplo?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ERROR:
+
+E	ZCMFI	510	Top level WBS code must be identical to the Proj. Definition code.
+
+
+
+TT_ZVLTPS_ECOSY_PRJ type STANDARD TABLE OF ZVLTPS_ECOSY_PRJ
+
+
+            SPLIT ls_capac_ct-hora_inicio AT ':' INTO DATA(lv_hh) DATA(lv_mm) DATA(lv_ss).
+            ls_kapa-begzt  = ( lv_hh * 3600 ) + ( lv_mm * 60 ) + lv_ss." hora inicio
+            SPLIT ls_capac_ct-hora_fim AT ':' INTO DATA(lv_hh2) DATA(lv_mm2) DATA(lv_ss2).
+            ls_kapa-endzt = ( lv_hh2 * 3600 ) + ( lv_mm2 * 60 ) + lv_ss2. "hora fim
+            SPLIT ls_capac_ct-dur_intervalo AT ':' INTO DATA(lv_hh3) DATA(lv_mm3) DATA(lv_ss3).
+            ls_kapa-pause = ( lv_hh3 * 3600 ) + ( lv_mm3 * 60 ) + lv_ss3. " interv
+			
+			
+			
+*"     VALUE(iv_posid			) TYPE prps-posid      " WBS Element ID
+*"     VALUE(iv_zzpriorprj		) TYPE zzpriorprj 	  OPTIONAL
+*"     VALUE(iv_zz_program_l1	) TYPE zz_program_l1  OPTIONAL
+*"     VALUE(iv_zz_strategy		) TYPE zz_strategy    OPTIONAL
+*"     VALUE(iv_zz_sub_strat	) TYPE zz_sub_strat   OPTIONAL
+*"     VALUE(iv_zz_macro_prj	) TYPE zz_macro_prj   OPTIONAL
+*"     VALUE(iv_zz_process_l1	) TYPE zz_process_l1  OPTIONAL
+*"     VALUE(iv_zz_prod_serv	) TYPE zz_prod_serv   OPTIONAL
+*"     VALUE(iv_zzcadeia_valor	) TYPE zzcadeia_valor OPTIONAL
+*"     VALUE(iv_zz_pais			) TYPE zz_pais        OPTIONAL
+*"     VALUE(iv_zz_stat_1		) TYPE zz_stat_1      OPTIONAL
+*"     VALUE(iv_zz_perc_stat_1	) TYPE zz_perc_stat_1 OPTIONAL
+*"     VALUE(iv_zz_solic_cod	) TYPE zz_solic_cod   OPTIONAL
+*"     VALUE(iv_zz_resp_cod		) TYPE zz_resp_cod    OPTIONAL
+*"     VALUE(iv_zzfundid		) TYPE zzfundid       OPTIONAL
+
+
+IV_POSID	TYPE	PRPS-POSID
+IV_ZZPRIORPRJ	TYPE	ZZPRIORPRJ
+IV_ZZ_PROGRAM_L1	TYPE	BAPI_TE_WBS_ELEMENT-ZZ_PROGRAM_L1
+IV_ZZ_STRATEGY	TYPE	ZZ_STRATEGY
+IV_ZZ_SUB_STRAT	TYPE	ZZ_SUB_STRAT
+IV_ZZ_MACRO_PRJ	TYPE	ZZ_MACRO_PRJ
+IV_ZZ_PROCESS_L1	TYPE	BAPI_TE_WBS_ELEMENT-ZZ_PROCESS_L1
+IV_ZZ_PROD_SERV	TYPE	ZZ_PROD_SERV
+IV_ZZCADEIA_VALOR	TYPE	ZZCADEIA_VALOR
+IV_ZZ_PAIS	TYPE	BAPI_TE_WBS_ELEMENT-ZZ_PAIS
+IV_ZZ_STAT_1	TYPE	BAPI_TE_WBS_ELEMENT-ZZ_STAT_1
+IV_ZZ_PERC_STAT_1	TYPE	ZZ_PERC_STAT_1
+IV_ZZ_SOLIC_COD	TYPE	BAPI_TE_WBS_ELEMENT-ZZ_SOLIC_COD
+IV_ZZ_RESP_COD	TYPE	BAPI_TE_WBS_ELEMENT-ZZ_RESP_COD
+IV_ZZFUNDID	TYPE	BAPI_TE_WBS_ELEMENT-ZZFUNDID
+
+
+          types lr_projectid_range TYPE RANGE OF zvltps_ecosy_prj-proj_ppm.
+          types lr_proj_fase_range TYPE RANGE OF zvltps_ecosy_prj-proj_fase.
+		  
+		  
+		  DATA lt_ztabproj TYPE SORTED TABLE OF zvltps_ecosy_prj WITH UNIQUE KEY proj_ppm proj_fase.
+			DATA ls_ztabproj LIKE LINE OF lt_ztabproj.
+		  lt_ztabproj = zcl_vlps_integ_sap_ecosys=>read_ztabproj( it_projects = ls_consultarprojeto-toconsultarprojeto ).
